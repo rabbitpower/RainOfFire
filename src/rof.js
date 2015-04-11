@@ -37,6 +37,7 @@ require(['threex.planets/package.require.js'
             specularMap : specularMap,
             specular    : new THREE.Color('grey'),
         })
+
         var mesh    = new THREE.Mesh(geometry, material)
         return mesh 
     }
@@ -276,54 +277,79 @@ require(['threex.planets/package.require.js'
         })
     })
 
+    var map = THREE.ImageUtils.loadTexture('images/bolide-small.jpg');
 
-     function createBolide() {
-        var geometry    = new THREE.SphereGeometry(0.5, 32, 32);
+    var material    = new THREE.MeshPhongMaterial({
+        map     : map,
+        //bumpMap       : bumpMap,
+        //bumpScale   : 0.05,
+        //specularMap : specularMap,
+        //specular    : new THREE.Color('grey'),
+    })
 
-        //var loader = new THREE.DDSLoader();
-        //var map = loader.load( 'images/earthmap7k.dds' );
+    //material = new THREE.MeshBasicMaterial({ color: 0xFFFF88 });
 
-        var map = THREE.ImageUtils.loadTexture('images/bolide-small.jpg');
-
-        //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
-        //var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
-
-        var material    = new THREE.MeshPhongMaterial({
-            map     : map,
-            //bumpMap       : bumpMap,
-            //bumpScale   : 0.05,
-            //specularMap : specularMap,
-            //specular    : new THREE.Color('grey'),
-        })
-        var mesh    = new THREE.Mesh(geometry, material)
-        return mesh 
+    function createBolide() {
+        var geometry = new THREE.SphereGeometry(0.5, 4, 4);
+        var mesh = new THREE.Mesh(geometry, material);
+        return mesh ;
     }
 
-    function addBolide() {
-        var bolide = createBolide();
-        scene.add(bolide);
+    //
+    var bolides = [];
+    //
+    function addBolide(bol) {
+
+        //if( bol.Latitude != "54.8N" ) return;
 
         var bolideSize = 0.01;
-        var bolideRadius = 0.52;
-        bolide.scale.set(bolideSize, bolideSize, bolideSize);
+        var bolideRadius = 0.54;
+
         
-        var theta = Math.random() * 360;
-        var phi = Math.random() * 360;
+        var phi = parseFloat( bol.Latitude.slice(0, -1) );
+        var theta = parseFloat( bol.Longitude.slice(0, -1) );
 
-        bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-        bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 360);
-        bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-        bolide.updateMatrix();        
-    }
+        if( bol.Latitude.slice(-1) == "S" ) phi = -phi;
+        if( bol.Longitude.slice(-1) == "W" ) theta = -theta;
 
-    for( var i = 0; i < 80; i++ ) {
-        addBolide();
+        theta += 90;
+
+        //phi = 0; theta = 90;
+
+        console.log( phi + " : " + theta );
+
+        for( var i = 0; i < 1; i++ ) {
+
+        var bolide = createBolide();
+        scene.add(bolide);
+        bolide.scale.set(bolideSize, bolideSize, bolideSize);
+
+        bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+        bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 180);
+        bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+        bolide.updateMatrix();
+
+            theta+=1.5;
+
+        }
     }
 
     // other
 
+    /*
+    scene.add( new THREE.Mesh( new THREE.CubeGeometry(5, 0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0x0000FF }) ) );
+    scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 5, 0.01), new THREE.MeshBasicMaterial({ color: 0x00FF00 }) ) );
+    scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 0.01, 5), new THREE.MeshBasicMaterial({ color: 0xFF0000 }) ) );
+    */
 
     $.getJSON("data/bolides.json", function (data) {
-        alert(data);
+        //alert(data);
+        
+        for(var i=0;i<data.length; i++){
+            bolides.push(data[i]);
+            addBolide(data[i]);
+            //break;
+        }
+
     });
 })
