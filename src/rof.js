@@ -1,159 +1,274 @@
-;(function(w, d3, undefined){
-    "use strict";
- 
-    var width, height;
-    function getSize(){
-        width = w.innerWidth,
-        height = w.innerHeight;
- 
-        if(width === 0 || height === 0){
-            setTimeout(function(){
-                getSize();
-            }, 100);
-        }
-        else {
-            init();
-        }
+require(['threex.planets/package.require.js'
+], function () {
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    var onRenderFcts = [];
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+    camera.position.z = 1.5;
+
+    var light = new THREE.AmbientLight(0x888888)
+    scene.add(light)
+
+    var light = new THREE.DirectionalLight(0xcccccc, 1)
+    light.position.set(5, 3, 5)
+    scene.add(light)
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //      add an object and make it move                  //
+    //////////////////////////////////////////////////////////////////////////////////  
+    function createEarth() {
+        var geometry    = new THREE.SphereGeometry(0.5, 32, 32);
+
+        var map = THREE.ImageUtils.loadTexture('images/earthmap21k.jpg');
+        //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
+        var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
+
+        var material    = new THREE.MeshPhongMaterial({
+            map     : map,
+            //bumpMap       : bumpMap,
+            bumpScale   : 0.05,
+            specularMap : specularMap,
+            specular    : new THREE.Color('grey'),
+        })
+        var mesh    = new THREE.Mesh(geometry, material)
+        return mesh 
     }
- 
-    function init(){
- 
-        //Setup path for outerspace
-        var space = d3.geo.azimuthal()
-            .mode("equidistant")
-            .translate([width / 2, height / 2]);
- 
-        space.scale(space.scale() * 3);
- 
-        var spacePath = d3.geo.path()
-            .projection(space)
-            .pointRadius(1);
- 
-        //Setup path for globe
-        var projection = d3.geo.azimuthal()
-            .mode("orthographic")
-            .translate([width / 2, height / 2]);
- 
-        var scale0 = projection.scale();
- 
-        var path = d3.geo.path()
-            .projection(projection)
-            .pointRadius(2);
- 
-        //Setup zoom behavior
-        var zoom = d3.behavior.zoom(true)
-            .translate(projection.origin())
-            .scale(projection.scale())
-            .scaleExtent([100, 800])
-            .on("zoom", move);
- 
-        var circle = d3.geo.greatCircle();
- 
-        var svg = d3.select("body")
-            .append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .append("g")
-                    .call(zoom)
-                    .on("dblclick.zoom", null);
- 
-        //Create a list of random stars and add them to outerspace
-        var starList = createStars(300);
-                
-        var stars = svg.append("g")
-            .selectAll("g")
-            .data(starList)
-            .enter()
-            .append("path")
-                .attr("class", "star")
-                .attr("d", function(d){
-                    spacePath.pointRadius(d.properties.radius);
-                    return spacePath(d);
-                });
- 
- 
-        svg.append("rect")
-            .attr("class", "frame")
-            .attr("width", width)
-            .attr("height", height);
- 
-        //Create the base globe
-        var backgroundCircle = svg.append("circle")
-            .attr('cx', width / 2)
-            .attr('cy', height / 2)
-            .attr('r', projection.scale())
-            .attr('class', 'globe')
-            .attr("filter", "url(#glow)")
-            .attr("fill", "url(#gradBlue)");
- 
-        var g = svg.append("g"),
-            features;
- 
-        //Add all of the countries to the globe
-        d3.json("world-countries.json", function(collection) {
-            features = g.selectAll(".feature").data(collection.features);
- 
-            features.enter().append("path")
-                .attr("class", "feature")
-                .attr("d", function(d){ return path(circle.clip(d)); });
-        });
- 
-        //Redraw all items with new projections
-        function redraw(){
-            features.attr("d", function(d){
-                return path(circle.clip(d));
-            });
- 
-            stars.attr("d", function(d){
-                spacePath.pointRadius(d.properties.radius);
-                return spacePath(d);
-            });
-        }
- 
- 
-        function move() {
-            if(d3.event){
-                var scale = d3.event.scale;
-                var origin = [d3.event.translate[0] * -1, d3.event.translate[1]];
-                
-                projection.scale(scale);
-                space.scale(scale * 3);
-                backgroundCircle.attr('r', scale);
-                path.pointRadius(2 * scale / scale0);
- 
-                projection.origin(origin);
-                circle.origin(origin);
-                
-                //globe and stars spin in the opposite direction because of the projection mode
-                var spaceOrigin = [origin[0] * -1, origin[1] * -1];
-                space.origin(spaceOrigin);
-                redraw();
-            }
-        }
- 
- 
-        function createStars(number){
-            var data = [];
-            for(var i = 0; i < number; i++){
-                data.push({
-                    geometry: {
-                        type: 'Point',
-                        coordinates: randomLonLat()
-                    },
-                    type: 'Feature',
-                    properties: {
-                        radius: Math.random() * 1.5
-                    }
-                });
-            }
-            return data;
-        }
- 
-        function randomLonLat(){
-            return [Math.random() * 360 - 180, Math.random() * 180 - 90];
-        }
+
+    var earthMesh = createEarth();
+    scene.add(earthMesh);
+
+    var center = new THREE.Vector3(0, 0, 0);
+
+    onRenderFcts.push(function (delta, now) {
+        camera.lookAt(center);
+    });
+
+    var cloudMesh = THREEx.Planets.createEarthCloud()
+    scene.add(cloudMesh)
+
+    onRenderFcts.push(function (delta, now) {
+        cloudMesh.rotateY(1 / 16 * delta)
+    })
+
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //      add star field                          //
+    //////////////////////////////////////////////////////////////////////////////////
+
+    var geometry = new THREE.SphereGeometry(90, 32, 32)
+    var material = new THREE.MeshBasicMaterial()
+    material.map = THREE.ImageUtils.loadTexture('threex.planets/images/galaxy_starfield.png')
+    material.side = THREE.BackSide
+    var mesh = new THREE.Mesh(geometry, material)
+    scene.add(mesh)
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //      Camera Controls                         //
+    //////////////////////////////////////////////////////////////////////////////////
+    var projector = new THREE.Projector();
+    var ray = new THREE.Raycaster(camera.position, null);
+
+    var mouse = { x: 0, y: 0 }
+    var mouse3D, isMouseDown = false, onMouseDownPosition = new THREE.Vector2(),
+        radious = 1.5, theta = 45, onMouseDownTheta = 45, phi = 60, onMouseDownPhi = 60;
+
+    camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+    camera.position.y = radious * Math.sin(phi * Math.PI / 360);
+    camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+    camera.updateMatrix();
+
+    function onDocumentMouseDown(event) {
+
+        event.preventDefault();
+
+        isMouseDown = true;
+
+        onMouseDownTheta = theta;
+        onMouseDownPhi = phi;
+        onMouseDownPosition.x = event.clientX;
+        onMouseDownPosition.y = event.clientY;
+
     }
- 
-    getSize();
- 
-}(window, d3));
+
+    function onDocumentMouseMove(event) {
+
+        event.preventDefault();
+
+        if (isMouseDown) {
+
+            theta = -((event.clientX - onMouseDownPosition.x) * 0.5) + onMouseDownTheta;
+            phi = ((event.clientY - onMouseDownPosition.y) * 0.5) + onMouseDownPhi;
+
+            phi = Math.min(180, Math.max(-180, phi));
+
+            camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+            camera.position.y = radious * Math.sin(phi * Math.PI / 360);
+            camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+            camera.updateMatrix();
+
+        }
+
+        var vector = new THREE.Vector3((event.clientX / renderer.domElement.width) * 2 - 1, -(event.clientY / renderer.domElement.height) * 2 + 1, 0.5);
+        mouse3D = vector.unproject(camera);
+        ray.direction = mouse3D.sub(camera.position).normalize();
+
+        interact();
+        render();
+
+    }
+
+    function onDocumentMouseUp(event) {
+
+        event.preventDefault();
+
+        isMouseDown = false;
+
+        onMouseDownPosition.x = event.clientX - onMouseDownPosition.x;
+        onMouseDownPosition.y = event.clientY - onMouseDownPosition.y;
+
+        if (onMouseDownPosition.length() > 5) {
+
+            return;
+
+        }
+
+        var intersect, intersects = ray.intersectScene(scene);
+
+        if (intersects.length > 0) {
+
+            //intersect = intersects[0].object == brush ? intersects[1] : intersects[0];
+
+            //if (intersect) {
+
+            //    if (isShiftDown) {
+
+            //        if (intersect.object != plane) {
+
+            //            scene.removeObject(intersect.object);
+
+            //        }
+
+            //    } else {
+
+            //        var position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
+
+            //        var voxel = new THREE.Mesh(cube, new THREE.MeshColorFillMaterial(colors[color]));
+            //        voxel.position.x = Math.floor(position.x / 50) * 50 + 25;
+            //        voxel.position.y = Math.floor(position.y / 50) * 50 + 25;
+            //        voxel.position.z = Math.floor(position.z / 50) * 50 + 25;
+            //        voxel.overdraw = true;
+            //        scene.addObject(voxel);
+
+            //    }
+
+            //}
+
+        }
+
+        updateHash();
+        interact();
+        render();
+
+    }
+
+    function onDocumentMouseWheel(event) {
+
+        radious -= event.wheelDeltaY / 1000;
+
+        camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+        camera.position.y = radious * Math.sin(phi * Math.PI / 360);
+        camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+        camera.updateMatrix();
+
+        interact();
+        render();
+
+    }
+
+    document.addEventListener('mousemove', onDocumentMouseMove, false);
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
+    document.addEventListener('mouseup', onDocumentMouseUp, false);
+
+    document.addEventListener('mousewheel', onDocumentMouseWheel, false);
+
+    function interact() {
+
+        //if (objectHovered) {
+
+        //    objectHovered.material[0].color.a = 1;
+        //    objectHovered.material[0].color.updateStyleString();
+        //    objectHovered = null;
+
+        //}
+
+        //var position, intersect, intersects = ray.intersectScene(scene);
+
+        //if (intersects.length > 0) {
+
+        //    intersect = intersects[0].object != brush ? intersects[0] : intersects[1];
+
+        //    if (intersect) {
+
+        //        if (isShiftDown) {
+
+        //            if (intersect.object != plane) {
+
+        //                objectHovered = intersect.object;
+        //                objectHovered.material[0].color.a = 0.5;
+        //                objectHovered.material[0].color.updateStyleString();
+
+        //                return;
+
+        //            }
+
+        //        } else {
+
+        //            position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
+
+        //            brush.position.x = Math.floor(position.x / 50) * 50 + 25;
+        //            brush.position.y = Math.floor(position.y / 50) * 50 + 25;
+        //            brush.position.z = Math.floor(position.z / 50) * 50 + 25;
+
+        //            return;
+
+        //        }
+
+        //    }
+
+        //}
+
+        //brush.position.y = 2000;
+
+    }
+
+    function render() {
+        renderer.render(scene, camera);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //      render the scene                        //
+    //////////////////////////////////////////////////////////////////////////////////
+    onRenderFcts.push(function () {
+        render();
+    })
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //      loop runner                         //
+    //////////////////////////////////////////////////////////////////////////////////
+    var lastTimeMsec = null
+    requestAnimationFrame(function animate(nowMsec) {
+        // keep looping
+        requestAnimationFrame(animate);
+        // measure time
+        lastTimeMsec = lastTimeMsec || nowMsec - 1000 / 60
+        var deltaMsec = Math.min(200, nowMsec - lastTimeMsec)
+        lastTimeMsec = nowMsec
+        // call each update function
+        onRenderFcts.forEach(function (onRenderFct) {
+            onRenderFct(deltaMsec / 1000, nowMsec / 1000)
+        })
+    })
+})
