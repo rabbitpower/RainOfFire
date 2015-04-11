@@ -277,7 +277,53 @@ require(['threex.planets/package.require.js'
     })
 
 
+     function createBolide() {
+        var geometry    = new THREE.SphereGeometry(0.5, 32, 32);
+
+        //var loader = new THREE.DDSLoader();
+        //var map = loader.load( 'images/earthmap7k.dds' );
+
+        var map = THREE.ImageUtils.loadTexture('images/bolide-small.jpg');
+
+        //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
+        //var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
+
+        var material    = new THREE.MeshPhongMaterial({
+            map     : map,
+            //bumpMap       : bumpMap,
+            //bumpScale   : 0.05,
+            //specularMap : specularMap,
+            //specular    : new THREE.Color('grey'),
+        })
+        var mesh    = new THREE.Mesh(geometry, material)
+        return mesh 
+    }
+
+    function addBolide() {
+        var bolide = createBolide();
+        scene.add(bolide);
+
+        var bolideSize = 0.01;
+        var bolideRadius = 0.52;
+        bolide.scale.set(bolideSize, bolideSize, bolideSize);
+        
+        var theta = Math.random() * 360;
+        var phi = Math.random() * 360;
+
+        bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+        bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 360);
+        bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+        bolide.updateMatrix();        
+    }
+
+    for( var i = 0; i < 80; i++ ) {
+        addBolide();
+    }
+
+    // other
+
+
     $.getJSON("data/bolides.json", function (data) {
-        //alert(data);
+        alert(data);
     });
 })
