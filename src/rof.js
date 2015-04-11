@@ -22,7 +22,11 @@ require(['threex.planets/package.require.js'
     function createEarth() {
         var geometry    = new THREE.SphereGeometry(0.5, 32, 32);
 
-        var map = THREE.ImageUtils.loadTexture('images/earthmap21k.jpg');
+        //var loader = new THREE.DDSLoader();
+        //var map = loader.load( 'images/earthmap7k.dds' );
+
+        var map = THREE.ImageUtils.loadTexture('images/earthmap7k.jpg');
+
         //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
         var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
 
