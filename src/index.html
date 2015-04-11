@@ -1,158 +1,272 @@
 ﻿<!DOCTYPE html>
-<head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <h1></h1>
-    <script src="http://d3js.org/d3.v3.min.js"></script>
-    <script src="http://d3js.org/queue.v1.min.js"></script>
-    <script src="http://d3js.org/topojson.v1.min.js"></script>
-    <div id = "rofpanel"></div>
-    <script>
-        var container = "#rofpanel";
+<script src="vendor/require.js"></script>
+<script src='vendor/three.js'></script>
+<script src="vendor/Projector.js"></script>
+<body style='margin: 0px; background-color: #000000;overflow: hidden;'>
+<script>
+    require(['threex.planets/package.require.js'
+    ], function () {
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-        var svg = d3.select(container).append("svg");
+        var onRenderFcts = [];
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+        camera.position.z = 1.5;
 
-        var width = svg[0].parentNode.clientWidth;
-        var height = svg[0].parentNode.clientHeight;
+        var light = new THREE.AmbientLight(0x888888)
+        scene.add(light)
 
-        var offset = [width / 2, height / 2];
+        var light = new THREE.DirectionalLight(0xcccccc, 1)
+        light.position.set(5, 3, 5)
+        scene.add(light)
 
-        var scale = 248;
-        var clipAngle = 90;
+        //////////////////////////////////////////////////////////////////////////////////
+        //		add an object and make it move					//
+        //////////////////////////////////////////////////////////////////////////////////	
 
-        var projection = d3.geo.orthographic()
-            .scale(scale)
-            .clipAngle(clipAngle)
-            .translate(offset);
+        var earthMesh = THREEx.Planets.createEarth()
+        scene.add(earthMesh)
 
-        var canvas = d3.select(container).append("canvas")
-            .attr("width", width)
-            .attr("height", height);
+        var center = new THREE.Vector3(0, 0, 0);
 
-        var c = canvas.node().getContext("2d");
+        onRenderFcts.push(function (delta, now) {
+            camera.lookAt(center);
+        });
 
-        var path = d3.geo.path()
-            .projection(projection)
-            .context(c);
+        //camera.lookAt(object);
 
-        var title = d3.select("h1");
+        //onRenderFcts.push(function (delta, now) {
+        //    earthMesh.rotateY(1 / 32 * delta)
+        //})
 
-        queue()
-            .defer(d3.json, "./data/world-110m.json")
-            .await(ready);
+        var cloudMesh = THREEx.Planets.createEarthCloud()
+        scene.add(cloudMesh)
 
-        function ready(error, world, names) {
-            
-            svg.attr("width", width)
-                .attr("height", height);
-
-            var globe = { type: "Sphere" },
-                land = topojson.feature(world, world.objects.land),
-                countries = topojson.feature(world, world.objects.countries).features,
-                borders = topojson.mesh(world, world.objects.countries, function (a, b) { return a !== b; }),
-                i = -1,
-                n = countries.length;
-
-            var λ = d3.scale.linear()
-                .domain([-width, width])
-                .range([-360, 360]);
-
-            var φ = d3.scale.linear()
-                .domain([-height, height])
-                .range([180, -180]);
-
-            function draw() {
-                c.clearRect(0, 0, width, height);
-                c.fillStyle = "#bbb", c.beginPath(), path(land), c.fill();
-                //c.fillStyle = "#f00", c.beginPath(), path(countries[i]), c.fill();
-                c.strokeStyle = "#fff", c.lineWidth = .5, c.beginPath(), path(borders), c.stroke();
-                c.strokeStyle = "#000", c.lineWidth = 2, c.beginPath(), path(globe), c.stroke();
-            }
-
-            var lastRotate = [0,0];
-            var downRotate = [0,0];
-            var downXY;
-            var mouseDown = false;
-
-            function resize() {
-                width = svg[0].parentNode.clientWidth;
-                height = svg[0].parentNode.clientHeight;
-
-                offset = [width / 2, height / 2];
-
-                svg.attr("width", width)
-                    .attr("height", height);
-
-                canvas.attr("width", width)
-                    .attr("height", height);
-
-                c = canvas.node().getContext("2d");
-
-                projection = d3.geo.orthographic()
-                            .scale(scale).clipAngle(clipAngle).translate(offset);
-
-                path = path.projection(projection)
-                        .context(c);
-
-                projection.rotate(lastRotate);
-
-                draw();
-            }
-
-            svg.on("mousemove", function () {
-                if (mouseDown) {
-                    var p = d3.mouse(this);
-                    lastRotate = [ λ(p[0] - downXY[0]) + downRotate[0], φ(p[1] - downXY[1]) + downRotate[1] ];
-                    projection.rotate(lastRotate);
-                    draw();
-                }
-            });
-
-            svg.on("mousedown", function () {
-                mouseDown = true;
-                downXY = d3.mouse(this);
-                downRotate = lastRotate;
-            });
-
-            svg.on("mouseup", function () {
-                mouseDown = false;
-            });
-
-            d3.select(window).on('resize', resize);
-
-            draw();
-
-            //var p = d3.geo.centroid(countries[i]),
-            //    r = d3.interpolate(projection.rotate(), [-p[0], -p[1]]);
+        onRenderFcts.push(function (delta, now) {
+            cloudMesh.rotateY(1 / 16 * delta)
+        })
 
 
-            /*
-            (function mousemove() {
-                d3.transition()
-                    .duration(1250)
-                    .each("start", function () {
-                        title.text(countries[i = (i + 1) % n].name);
-                    })
-                    .tween("rotate", function () {
-                        var p = d3.geo.centroid(countries[i]),
-                            r = d3.interpolate(projection.rotate(), [-p[0], -p[1]]);
-                        return function (t) {
-                            projection.rotate(r(t));
-                            c.clearRect(0, 0, width, height);
-                            c.fillStyle = "#bbb", c.beginPath(), path(land), c.fill();
-                            c.fillStyle = "#f00", c.beginPath(), path(countries[i]), c.fill();
-                            c.strokeStyle = "#fff", c.lineWidth = .5, c.beginPath(), path(borders), c.stroke();
-                            c.strokeStyle = "#000", c.lineWidth = 2, c.beginPath(), path(globe), c.stroke();
-                        };
-                    })
-                  .mousemove()
-                    .each("end", mousemove);
-            })();
-            */
-        
+        //////////////////////////////////////////////////////////////////////////////////
+        //		add star field							//
+        //////////////////////////////////////////////////////////////////////////////////
+
+        var geometry = new THREE.SphereGeometry(90, 32, 32)
+        var material = new THREE.MeshBasicMaterial()
+        material.map = THREE.ImageUtils.loadTexture('threex.planets/images/galaxy_starfield.png')
+        material.side = THREE.BackSide
+        var mesh = new THREE.Mesh(geometry, material)
+        scene.add(mesh)
+
+        //////////////////////////////////////////////////////////////////////////////////
+        //		Camera Controls							//
+        //////////////////////////////////////////////////////////////////////////////////
+        var projector = new THREE.Projector();
+        var ray = new THREE.Raycaster(camera.position, null);
+
+        var mouse = { x: 0, y: 0 }
+        var mouse3D, isMouseDown = false, onMouseDownPosition = new THREE.Vector2(),
+			radious = 1.5, theta = 45, onMouseDownTheta = 45, phi = 60, onMouseDownPhi = 60;
+
+        camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+        camera.position.y = radious * Math.sin(phi * Math.PI / 360);
+        camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+        camera.updateMatrix();
+
+        function onDocumentMouseDown(event) {
+
+            event.preventDefault();
+
+            isMouseDown = true;
+
+            onMouseDownTheta = theta;
+            onMouseDownPhi = phi;
+            onMouseDownPosition.x = event.clientX;
+            onMouseDownPosition.y = event.clientY;
+
         }
 
-    </script>
+        function onDocumentMouseMove(event) {
+
+            event.preventDefault();
+
+            if (isMouseDown) {
+
+                theta = -((event.clientX - onMouseDownPosition.x) * 0.5) + onMouseDownTheta;
+                phi = ((event.clientY - onMouseDownPosition.y) * 0.5) + onMouseDownPhi;
+
+                phi = Math.min(180, Math.max(-180, phi));
+
+                camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+                camera.position.y = radious * Math.sin(phi * Math.PI / 360);
+                camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+                camera.updateMatrix();
+
+            }
+
+            var vector = new THREE.Vector3((event.clientX / renderer.domElement.width) * 2 - 1, -(event.clientY / renderer.domElement.height) * 2 + 1, 0.5);
+            mouse3D = vector.unproject(camera);
+            ray.direction = mouse3D.sub(camera.position).normalize();
+
+            interact();
+            render();
+
+        }
+
+        function onDocumentMouseUp(event) {
+
+            event.preventDefault();
+
+            isMouseDown = false;
+
+            onMouseDownPosition.x = event.clientX - onMouseDownPosition.x;
+            onMouseDownPosition.y = event.clientY - onMouseDownPosition.y;
+
+            if (onMouseDownPosition.length() > 5) {
+
+                return;
+
+            }
+
+            var intersect, intersects = ray.intersectScene(scene);
+
+            if (intersects.length > 0) {
+
+                //intersect = intersects[0].object == brush ? intersects[1] : intersects[0];
+
+                //if (intersect) {
+
+                //    if (isShiftDown) {
+
+                //        if (intersect.object != plane) {
+
+                //            scene.removeObject(intersect.object);
+
+                //        }
+
+                //    } else {
+
+                //        var position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
+
+                //        var voxel = new THREE.Mesh(cube, new THREE.MeshColorFillMaterial(colors[color]));
+                //        voxel.position.x = Math.floor(position.x / 50) * 50 + 25;
+                //        voxel.position.y = Math.floor(position.y / 50) * 50 + 25;
+                //        voxel.position.z = Math.floor(position.z / 50) * 50 + 25;
+                //        voxel.overdraw = true;
+                //        scene.addObject(voxel);
+
+                //    }
+
+                //}
+
+            }
+
+            updateHash();
+            interact();
+            render();
+
+        }
+
+        function onDocumentMouseWheel(event) {
+
+            radious -= event.wheelDeltaY / 1000;
+
+            camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+            camera.position.y = radious * Math.sin(phi * Math.PI / 360);
+            camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+            camera.updateMatrix();
+
+            interact();
+            render();
+
+        }
+
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
+        document.addEventListener('mousedown', onDocumentMouseDown, false);
+        document.addEventListener('mouseup', onDocumentMouseUp, false);
+
+        document.addEventListener('mousewheel', onDocumentMouseWheel, false);
+
+        function interact() {
+
+            //if (objectHovered) {
+
+            //    objectHovered.material[0].color.a = 1;
+            //    objectHovered.material[0].color.updateStyleString();
+            //    objectHovered = null;
+
+            //}
+
+            //var position, intersect, intersects = ray.intersectScene(scene);
+
+            //if (intersects.length > 0) {
+
+            //    intersect = intersects[0].object != brush ? intersects[0] : intersects[1];
+
+            //    if (intersect) {
+
+            //        if (isShiftDown) {
+
+            //            if (intersect.object != plane) {
+
+            //                objectHovered = intersect.object;
+            //                objectHovered.material[0].color.a = 0.5;
+            //                objectHovered.material[0].color.updateStyleString();
+
+            //                return;
+
+            //            }
+
+            //        } else {
+
+            //            position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
+
+            //            brush.position.x = Math.floor(position.x / 50) * 50 + 25;
+            //            brush.position.y = Math.floor(position.y / 50) * 50 + 25;
+            //            brush.position.z = Math.floor(position.z / 50) * 50 + 25;
+
+            //            return;
+
+            //        }
+
+            //    }
+
+            //}
+
+            //brush.position.y = 2000;
+
+        }
+
+        function render() {
+            renderer.render(scene, camera);
+        }
+
+        //////////////////////////////////////////////////////////////////////////////////
+        //		render the scene						//
+        //////////////////////////////////////////////////////////////////////////////////
+        onRenderFcts.push(function () {
+            render();
+        })
+
+        //////////////////////////////////////////////////////////////////////////////////
+        //		loop runner							//
+        //////////////////////////////////////////////////////////////////////////////////
+        var lastTimeMsec = null
+        requestAnimationFrame(function animate(nowMsec) {
+            // keep looping
+            requestAnimationFrame(animate);
+            // measure time
+            lastTimeMsec = lastTimeMsec || nowMsec - 1000 / 60
+            var deltaMsec = Math.min(200, nowMsec - lastTimeMsec)
+            lastTimeMsec = nowMsec
+            // call each update function
+            onRenderFcts.forEach(function (onRenderFct) {
+                onRenderFct(deltaMsec / 1000, nowMsec / 1000)
+            })
+        })
+    })
+</script>
+
 </body>
