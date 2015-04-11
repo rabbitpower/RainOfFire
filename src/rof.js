@@ -275,4 +275,9 @@ require(['threex.planets/package.require.js'
             onRenderFct(deltaMsec / 1000, nowMsec / 1000)
         })
     })
+
+
+    $.getJSON("data/bolides.json", function (data) {
+        //alert(data);
+    });
 })
