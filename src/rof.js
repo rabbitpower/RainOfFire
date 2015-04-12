@@ -1,13 +1,20 @@
 require(['threex.planets/package.require.js'
 ], function () {
-    var renderer = new THREE.WebGLRenderer();
+
+    if (Detector.webgl)
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+    else
+        renderer = new THREE.CanvasRenderer();
+
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
     var onRenderFcts = [];
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
-    camera.position.z = 1.5;
+    camera.position.x = 1.0687713212237027;
+    camera.position.y = 1.1071055030683448;
+    camera.position.z = -0.5345343704213782;
 
     var light = new THREE.AmbientLight(0x888888)
     scene.add(light)
@@ -47,9 +54,9 @@ require(['threex.planets/package.require.js'
 
     var center = new THREE.Vector3(0, 0, 0);
 
-    onRenderFcts.push(function (delta, now) {
-        camera.lookAt(center);
-    });
+    //onRenderFcts.push(function (delta, now) {
+    //    camera.lookAt(center);
+    //});
 
     var cloudMesh = THREEx.Planets.createEarthCloud()
     scene.add(cloudMesh)
@@ -66,6 +73,7 @@ require(['threex.planets/package.require.js'
     var geometry = new THREE.SphereGeometry(90, 32, 32)
     var material = new THREE.MeshBasicMaterial()
     material.map = THREE.ImageUtils.loadTexture('threex.planets/images/galaxy_starfield.png')
+    //material.map = THREE.ImageUtils.loadTexture('images/sky_8192x4096.png')
     material.side = THREE.BackSide
     var mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
@@ -73,17 +81,17 @@ require(['threex.planets/package.require.js'
     //////////////////////////////////////////////////////////////////////////////////
     //      Camera Controls                         //
     //////////////////////////////////////////////////////////////////////////////////
-    var projector = new THREE.Projector();
-    var ray = new THREE.Raycaster(camera.position, null);
+    //var projector = new THREE.Projector();
+    //var ray = new THREE.Raycaster(camera.position, null);
 
-    var mouse = { x: 0, y: 0 }
-    var mouse3D, isMouseDown = false, onMouseDownPosition = new THREE.Vector2(),
-        radious = 1.5, theta = 45, onMouseDownTheta = 45, phi = 60, onMouseDownPhi = 60;
+    //var mouse = { x: 0, y: 0 }
+    //var mouse3D, isMouseDown = false, onMouseDownPosition = new THREE.Vector2(),
+    //    radious = 1.5, theta = 45, onMouseDownTheta = 45, phi = 60, onMouseDownPhi = 60;
 
-    camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-    camera.position.y = radious * Math.sin(phi * Math.PI / 360);
-    camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-    camera.updateMatrix();
+    //camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+    //camera.position.y = radious * Math.sin(phi * Math.PI / 360);
+    //camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+    //camera.updateMatrix();
 
     function onDocumentMouseDown(event) {
 
@@ -127,53 +135,53 @@ require(['threex.planets/package.require.js'
 
     function onDocumentMouseUp(event) {
 
-        event.preventDefault();
+        //event.preventDefault();
 
-        isMouseDown = false;
+        //isMouseDown = false;
 
-        onMouseDownPosition.x = event.clientX - onMouseDownPosition.x;
-        onMouseDownPosition.y = event.clientY - onMouseDownPosition.y;
+        //onMouseDownPosition.x = event.clientX - onMouseDownPosition.x;
+        //onMouseDownPosition.y = event.clientY - onMouseDownPosition.y;
 
-        if (onMouseDownPosition.length() > 5) {
+        //if (onMouseDownPosition.length() > 5) {
 
-            return;
+        //    return;
 
-        }
+        //}
 
-        var intersect, intersects = ray.intersectScene(scene);
+        //var intersect, intersects = ray.intersectScene(scene);
 
-        if (intersects.length > 0) {
+        //if (intersects.length > 0) {
 
-            //intersect = intersects[0].object == brush ? intersects[1] : intersects[0];
+        //    //intersect = intersects[0].object == brush ? intersects[1] : intersects[0];
 
-            //if (intersect) {
+        //    //if (intersect) {
 
-            //    if (isShiftDown) {
+        //    //    if (isShiftDown) {
 
-            //        if (intersect.object != plane) {
+        //    //        if (intersect.object != plane) {
 
-            //            scene.removeObject(intersect.object);
+        //    //            scene.removeObject(intersect.object);
 
-            //        }
+        //    //        }
 
-            //    } else {
+        //    //    } else {
 
-            //        var position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
+        //    //        var position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
 
-            //        var voxel = new THREE.Mesh(cube, new THREE.MeshColorFillMaterial(colors[color]));
-            //        voxel.position.x = Math.floor(position.x / 50) * 50 + 25;
-            //        voxel.position.y = Math.floor(position.y / 50) * 50 + 25;
-            //        voxel.position.z = Math.floor(position.z / 50) * 50 + 25;
-            //        voxel.overdraw = true;
-            //        scene.addObject(voxel);
+        //    //        var voxel = new THREE.Mesh(cube, new THREE.MeshColorFillMaterial(colors[color]));
+        //    //        voxel.position.x = Math.floor(position.x / 50) * 50 + 25;
+        //    //        voxel.position.y = Math.floor(position.y / 50) * 50 + 25;
+        //    //        voxel.position.z = Math.floor(position.z / 50) * 50 + 25;
+        //    //        voxel.overdraw = true;
+        //    //        scene.addObject(voxel);
 
-            //    }
+        //    //    }
 
-            //}
+        //    //}
 
-        }
+        //}
 
-        updateHash();
+        //updateHash();
         interact();
         render();
 
@@ -193,14 +201,16 @@ require(['threex.planets/package.require.js'
 
     }
 
-    document.addEventListener('mousemove', onDocumentMouseMove, false);
-    document.addEventListener('mousedown', onDocumentMouseDown, false);
+    //document.addEventListener('mousemove', onDocumentMouseMove, false);
+    //document.addEventListener('mousedown', onDocumentMouseDown, false);
     document.addEventListener('mouseup', onDocumentMouseUp, false);
 
-    document.addEventListener('mousewheel', onDocumentMouseWheel, false);
+    //document.addEventListener('mousewheel', onDocumentMouseWheel, false);
 
     function interact() {
-
+        console.log(camera.position.x);
+        console.log(camera.position.y);
+        console.log(camera.position.z);
         //if (objectHovered) {
 
         //    objectHovered.material[0].color.a = 1;
@@ -249,8 +259,25 @@ require(['threex.planets/package.require.js'
 
     }
 
+    function animate() {
+        requestAnimationFrame(animate);
+        render();
+        update();
+    }
+
+    function update() {
+        if (keyboard.pressed("z")) {
+            // do something
+        }
+        var delta = clock.getDelta();
+        //customUniforms.time.value += delta;
+        controls.update();
+    }
+
     function render() {
         renderer.render(scene, camera);
+        //controls.update();
+        //controls.rotateUp(-0.001);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -277,6 +304,9 @@ require(['threex.planets/package.require.js'
         })
     })
 
+    function addBall(bolideSize) {
+    }
+
     var map = THREE.ImageUtils.loadTexture('images/bolide-small.jpg');
 
     var material    = new THREE.MeshPhongMaterial({
@@ -289,21 +319,87 @@ require(['threex.planets/package.require.js'
 
     //material = new THREE.MeshBasicMaterial({ color: 0xFFFF88 });
 
-    function createBolide() {
-        var geometry = new THREE.SphereGeometry(0.5, 4, 4);
-        var mesh = new THREE.Mesh(geometry, material);
-        return mesh ;
+    function createBolide(bolideSize) {
+        //var geometry = new THREE.SphereGeometry(bolideSize, 8, 8);
+        //var mesh = new THREE.Mesh(geometry, material);
+
+        // base image texture for mesh
+        var lavaTexture = new THREE.ImageUtils.loadTexture('images/lava.jpg');
+        lavaTexture.wrapS = lavaTexture.wrapT = THREE.RepeatWrapping;
+        // multiplier for distortion speed 		
+        var baseSpeed = 0.02;
+        // number of times to repeat texture in each direction
+        var repeatS = repeatT = 4.0;
+
+        // texture used to generate "randomness", distort all other textures
+        var noiseTexture = new THREE.ImageUtils.loadTexture('images/cloud.png');
+        noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
+        // magnitude of noise effect
+        var noiseScale = 0.5;
+
+        // texture to additively blend with base image texture
+        var blendTexture = new THREE.ImageUtils.loadTexture('images/lava.jpg');
+        blendTexture.wrapS = blendTexture.wrapT = THREE.RepeatWrapping;
+        // multiplier for distortion speed 
+        var blendSpeed = 0.01;
+        // adjust lightness/darkness of blended texture
+        var blendOffset = 0.25;
+
+        // texture to determine normal displacement
+        var bumpTexture = noiseTexture;
+        bumpTexture.wrapS = bumpTexture.wrapT = THREE.RepeatWrapping;
+        // multiplier for distortion speed 		
+        var bumpSpeed = 0.15;
+        // magnitude of normal displacement
+        var bumpScale = bolideSize * 2;
+
+        // use "this." to create global object
+        var customUniforms = {
+            baseTexture: { type: "t", value: lavaTexture },
+            baseSpeed: { type: "f", value: baseSpeed },
+            repeatS: { type: "f", value: repeatS },
+            repeatT: { type: "f", value: repeatT },
+            noiseTexture: { type: "t", value: noiseTexture },
+            noiseScale: { type: "f", value: noiseScale },
+            blendTexture: { type: "t", value: blendTexture },
+            blendSpeed: { type: "f", value: blendSpeed },
+            blendOffset: { type: "f", value: blendOffset },
+            bumpTexture: { type: "t", value: bumpTexture },
+            bumpSpeed: { type: "f", value: bumpSpeed },
+            bumpScale: { type: "f", value: bumpScale },
+            alpha: { type: "f", value: 1.0 },
+            time: { type: "f", value: 1.0 }
+        };
+
+        // create custom material from the shader code above
+        //   that is within specially labeled script tags
+        var customMaterial = new THREE.ShaderMaterial(
+        {
+            uniforms: customUniforms,
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('fragmentShader').textContent
+        });
+
+        var bolideGeometry = new THREE.SphereGeometry(bolideSize, 16, 16);
+        var bolideMesh = new THREE.Mesh(bolideGeometry, customMaterial);
+
+        onRenderFcts.push(function callback(delta, now) {
+            customUniforms.time.value += delta;
+        });
+
+        return bolideMesh;
     }
 
     //
     var bolides = [];
     //
+
+    var bolideGeometry = new THREE.Geometry();
+
     function addBolide(bol) {
 
-        //if( bol.Latitude != "54.8N" ) return;
-
-        var bolideSize = 0.01;
-        var bolideRadius = 0.54;
+        var bolideSize = 0.005;
+        var bolideRadius = 0.65;
 
         
         var phi = parseFloat( bol.Latitude.slice(0, -1) );
@@ -314,24 +410,50 @@ require(['threex.planets/package.require.js'
 
         theta += 90;
 
-        //phi = 0; theta = 90;
+        var dx = Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+        var dy = Math.sin(phi * Math.PI / 180);
+        var dz = Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
 
-        console.log( phi + " : " + theta );
+        var bolide = createBolide(bolideSize);
 
-        for( var i = 0; i < 1; i++ ) {
+        bolide.position.x = bolideRadius * dx;
+        bolide.position.y = bolideRadius * dy;
+        bolide.position.z = bolideRadius * dz;
 
-        var bolide = createBolide();
         scene.add(bolide);
-        bolide.scale.set(bolideSize, bolideSize, bolideSize);
 
-        bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-        bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 180);
-        bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-        bolide.updateMatrix();
+        onRenderFcts.push(function callback(delta, now) {
+            bolideRadius -= delta / 100;
 
-            theta+=1.5;
+            if (bolideRadius < 0.51) {
+                onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
+                return;
+            }
 
-        }
+            bolide.position.x = bolideRadius * dx;
+            bolide.position.y = bolideRadius * dy;
+            bolide.position.z = bolideRadius * dz;
+        })
+
+        //for( var i = 0; i < 10; i++ ) {
+
+        ////scene.add(bolide);
+        ////bolide.scale.set(bolideSize, bolideSize, bolideSize);
+
+        //bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+        //bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 180);
+        //bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+
+        //THREE.GeometryUtils.merge(bolideGeometry, bolide);
+
+        //bolide.matrix.set(new THREE.Matrix4());
+
+        ////theta += 1.5;
+        ////phi += 0.1;
+
+        //bolideRadius += 0.005;
+
+        //}
     }
 
     // other
@@ -342,14 +464,32 @@ require(['threex.planets/package.require.js'
     scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 0.01, 5), new THREE.MeshBasicMaterial({ color: 0xFF0000 }) ) );
     */
 
+    THREEx.WindowResize(renderer, camera);
+    THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
+    // CONTROLS
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.minDistance = 0.65;
+    controls.maxDistance = 2;
+    controls.noPan = true;
+
     $.getJSON("data/bolides.json", function (data) {
         //alert(data);
-        
-        for(var i=0;i<data.length; i++){
-            bolides.push(data[i]);
-            addBolide(data[i]);
-            //break;
-        }
+
+        setTimeout(function () {
+            for (var i = 0; i < data.length; i++) {
+                bolides.push(data[i]);
+                addBolide(data[i]);
+                //break;
+            }
+
+            controls.autoRotate = true;
+        }, 1000);
+
+        //bolideGeometry.computeFaceNormals();
+        //group = new THREE.Mesh(bolideGeometry, material);
+        //group.matrixAutoUpdate = false;
+        //group.updateMatrix();
+        //scene.add(group);
 
     });
 })
