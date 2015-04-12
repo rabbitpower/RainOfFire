@@ -9,19 +9,21 @@ require(['threex.planets/package.require.js'
     var DateMin;
     var DateMax;
     var bolides = [];
-    var RadiatedEnergyMin = 1;
+    var RadiatedEnergyMin = Number.MAX_VALUE;
     var RadiatedEnergyMax = 1;
     var SelectedEnergyMin = 0;
     var SelectedEnergyMax = 0;
-    var ImpactEnergyMin = 0;
+    var ImpactEnergyMin = Number.MAX_VALUE;
     var ImpactEnergyMax = 0;
     var SelectedImpactEnergyMin = 0;
     var SelectedImpactEnergyMax = 0;
 
-    var AltitudeMin = 0;
+    var AltitudeMin = Number.MAX_VALUE;
     var AltitudeMax = 0;
     var SelAltitudeMin = 0;
     var SelAltitudeMax = 0;
+
+    var stopAnimation = false;
 
     StartDateMin = new Date(2009, 0, 1);
 
@@ -76,9 +78,9 @@ require(['threex.planets/package.require.js'
                     value = Math.round(value / 10) / 100 + "K";
                 } else if (value < 1000) {
                     value = Math.round(value / 100) / 10 + "K";
-                } else if (value < 100000) {
+                } else if (value < 1000000) {
                     value = Math.round(value / 1000) + "K";
-                } else if (value < 100000000) {
+                } else if (value < 1000000000) {
                     value = Math.round(value / 1000000) + "M";
                 } else {
                     value = Math.round(value / 1000000000) + "G";
@@ -170,6 +172,7 @@ require(['threex.planets/package.require.js'
     $("#element").bind("valuesChanging", function (e, data) {
         DateMin = data.values.min;
         DateMax = data.values.max;
+        stopAnimation = true;
         getJSonData();
     });
 
@@ -686,7 +689,7 @@ require(['threex.planets/package.require.js'
 
             if (new Date(bolides[i].Date).valueOf() >= DateMin.valueOf() && new Date(bolides[i].Date).valueOf() <= DateMax.valueOf()) {
 
-                if (!bolides[i].RadiatedEnergy || ( log10(bolides[i].RadiatedEnergy) >= SelectedEnergyMin && log10(bolides[i].RadiatedEnergy <= SelectedEnergyMax)) ) {
+                if (!bolides[i].RadiatedEnergy || ( log10(bolides[i].RadiatedEnergy) >= SelectedEnergyMin && log10(bolides[i].RadiatedEnergy) <= SelectedEnergyMax) ) {
 
                     if ( !bolides[i].ImpactEnergy || (bolides[i].ImpactEnergy >= SelectedImpactEnergyMin && bolides[i].ImpactEnergy <= SelectedImpactEnergyMax) ) {
                         if (!bolides[i].Altitude || (bolides[i].Altitude >= SelAltitudeMin && bolides[i].Altitude <= SelAltitudeMax)) {
@@ -709,10 +712,9 @@ require(['threex.planets/package.require.js'
         var temp = StartDateMin;
         var DateEnd = new Date(2015, 11, 31);
         var animate = function () {
-            if (temp < DateEnd) {
+            if (temp < DateEnd && !stopAnimation) {
                 temp = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate() + 4);
                 $("#element").dateRangeSlider("values", StartDateMin, temp);
-                //getJSonData();
                 window.setTimeout(animate, 100);
             }
             else
