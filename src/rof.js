@@ -1,5 +1,151 @@
 require(['threex.planets/package.require.js'
 ], function () {
+
+    var DateMin;
+    var DateMax;
+    var bolides = [];
+    var RadiatedEnergyMin = 1;
+    var RadiatedEnergyMax = 1;
+    var SelectedEnergyMin = 1;
+    var SelectedEnergyMax = 1;
+    var ImpactEnergyMin = 0;
+    var ImpactEnergyMax = 0;
+    var SelectedImpactEnergyMin = 0;
+    var SelectedImpactEnergyMax = 0;
+
+
+    $("#element").dateRangeSlider({
+
+        bounds: { min: new Date(2009, 0, 1), max: new Date(2015, 11, 31, 12, 59, 59) },
+        defaultValues: { min: new Date(2014, 1, 10), max: new Date(2014, 4, 22) },
+        scales: [{
+            first: function (value) {
+                return value;
+            },
+            end: function (value) {
+                return value;
+            },
+            next: function (value) {
+                var next = new Date(value);
+                return new Date(next.setFullYear(value.getFullYear() + 1));
+            },
+            label: function (value) {
+                return value.getFullYear();
+            },
+            format: function (tickContainer, tickStart, tickEnd) {
+                tickContainer.addClass("ui-ruler-tick");
+            }
+        }],
+
+
+        arrows: false,
+        valueLabels: "change",
+        durationIn: 500,
+        durationOut: 2000,
+        // symmetricPositionning: true,
+        range: { min: 0 },
+        wheelMode: "zoom"
+    });
+
+    function log10(val) {
+        return Math.log(val) / Math.LN10;
+    }
+
+    function RESlider() {
+        //alert(RadiatedEnergyMax);
+        var sc = (log10(RadiatedEnergyMax) - log10(RadiatedEnergyMin)) / 20;
+
+        $("#element2").rangeSlider({
+            
+            bounds: { min: log10(RadiatedEnergyMin), max: log10(RadiatedEnergyMax) },
+            defaultValues: { min: log10(RadiatedEnergyMin), max: log10(RadiatedEnergyMax) },
+            formatter: function (val) {
+                var value = Math.pow(10, val);
+                if (value < 100) {
+                    value = Math.round(value / 10) / 100 + "K";
+                } else if (value < 1000) {
+                    value = Math.round(value / 100) / 10 + "K";
+                } else if (value < 100000) {
+                    value = Math.round(value / 1000) + "K";
+                } else if (value < 100000000) {
+                    value = Math.round(value / 1000000) + "M";
+                } else {
+                    value = Math.round(value / 1000000000) + "G";
+                }
+                return value.toString();
+            },
+            scales: [
+        // Primary scale
+          {
+              first: function (val) { return val; },
+              next: function (val) { return val+sc },
+              stop: function (val) { return false; },
+              label: function () { return ""; },
+              format: function (tickContainer, tickStart, tickEnd) {
+                  tickContainer.addClass("ruler-label");
+              }
+          },
+         
+            ],
+            arrows: false,
+            valueLabels: "change",
+            durationIn: 500,
+            durationOut: 2000,
+            // symmetricPositionning: true,
+            range: { min: 0 },
+            wheelMode: "zoom"
+        });
+    }
+
+    function IESlider() {
+        //alert(RadiatedEnergyMax);
+        var sc = (ImpactEnergyMax - ImpactEnergyMin) / 2;
+
+        $("#element3").rangeSlider({
+
+            bounds: { min: (ImpactEnergyMin), max: (ImpactEnergyMax) },
+            defaultValues: { min: (ImpactEnergyMin), max: (ImpactEnergyMax) },          
+            scales: [
+        // Primary scale
+          {
+              first: function (val) { return val; },
+              next: function (val) { return val + sc },
+              stop: function (val) { return false; },
+              label: function () { return ""; },
+              format: function (tickContainer, tickStart, tickEnd) {
+                  tickContainer.addClass("ruler-label");
+              }
+          },
+
+            ],
+            arrows: false,
+            valueLabels: "change",
+            durationIn: 500,
+            durationOut: 2000,
+            // symmetricPositionning: true,
+            range: { min: 0 },
+            wheelMode: "zoom"
+        });
+    }
+
+    $("#element").bind("valuesChanging", function (e, data) {
+        DateMin = data.values.min;
+        DateMax = data.values.max;
+        getJSonData();
+    });
+
+    $("#element2").bind("valuesChanging", function (e, data) {
+        SelectedEnergyMin = data.values.min;
+        SelectedEnergyMax = data.values.max;
+        getJSonData();
+    });
+
+    $("#element3").bind("valuesChanging", function (e, data) {
+        SelectedImpactEnergyMin = data.values.min;
+        SelectedImpactEnergyMax = data.values.max;
+        getJSonData();
+    });
+
     var renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
@@ -20,7 +166,7 @@ require(['threex.planets/package.require.js'
     //      add an object and make it move                  //
     //////////////////////////////////////////////////////////////////////////////////  
     function createEarth() {
-        var geometry    = new THREE.SphereGeometry(0.5, 32, 32);
+        var geometry = new THREE.SphereGeometry(0.5, 32, 32);
 
         //var loader = new THREE.DDSLoader();
         //var map = loader.load( 'images/earthmap7k.dds' );
@@ -30,16 +176,16 @@ require(['threex.planets/package.require.js'
         //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
         var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
 
-        var material    = new THREE.MeshPhongMaterial({
-            map     : map,
+        var material = new THREE.MeshPhongMaterial({
+            map: map,
             //bumpMap       : bumpMap,
-            bumpScale   : 0.05,
-            specularMap : specularMap,
-            specular    : new THREE.Color('grey'),
+            bumpScale: 0.05,
+            specularMap: specularMap,
+            specular: new THREE.Color('grey'),
         })
 
-        var mesh    = new THREE.Mesh(geometry, material)
-        return mesh 
+        var mesh = new THREE.Mesh(geometry, material)
+        return mesh
     }
 
     var earthMesh = createEarth();
@@ -279,8 +425,8 @@ require(['threex.planets/package.require.js'
 
     var map = THREE.ImageUtils.loadTexture('images/bolide-red.jpg');
 
-    var material    = new THREE.MeshPhongMaterial({
-        map     : map,
+    var material = new THREE.MeshPhongMaterial({
+        map: map,
         //bumpMap       : bumpMap,
         //bumpScale   : 0.05,
         //specularMap : specularMap,
@@ -292,11 +438,12 @@ require(['threex.planets/package.require.js'
     function createBolide() {
         var geometry = new THREE.SphereGeometry(0.5, 16, 16);
         var mesh = new THREE.Mesh(geometry, material);
-        return mesh ;
+        return mesh;
     }
 
     //
-    var bolides = [];
+
+    var bolideObjects = [];
     //
     function addBolide(bol) {
 
@@ -305,33 +452,35 @@ require(['threex.planets/package.require.js'
         var bolideSize = 0.01;
         var bolideRadius = 0.54;
 
-        
-        var phi = parseFloat( bol.Latitude.slice(0, -1) );
-        var theta = parseFloat( bol.Longitude.slice(0, -1) );
 
-        if( bol.Latitude.slice(-1) == "S" ) phi = -phi;
-        if( bol.Longitude.slice(-1) == "W" ) theta = -theta;
+        var phi = parseFloat(bol.Latitude.slice(0, -1));
+        var theta = parseFloat(bol.Longitude.slice(0, -1));
+
+        if (bol.Latitude.slice(-1) == "S") phi = -phi;
+        if (bol.Longitude.slice(-1) == "W") theta = -theta;
 
         theta += 90;
 
         //phi = 0; theta = 90;
 
-        console.log( phi + " : " + theta );
+        console.log(phi + " : " + theta);
 
-        for( var i = 0; i < 1; i++ ) {
+        for (var i = 0; i < 1; i++) {
 
-        var bolide = createBolide();
-        scene.add(bolide);
-        bolide.scale.set(bolideSize, bolideSize, bolideSize);
+            var bolide = createBolide();
+            scene.add(bolide);
+            bolide.scale.set(bolideSize, bolideSize, bolideSize);
 
-        bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-        bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 180);
-        bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-        bolide.updateMatrix();
+            bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+            bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 180);
+            bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+            bolide.updateMatrix();
 
-            theta+=1.5;
+            theta += 1.5;
 
         }
+
+        bolideObjects.push(bolide);
     }
 
     // other
@@ -341,15 +490,65 @@ require(['threex.planets/package.require.js'
     scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 5, 0.01), new THREE.MeshBasicMaterial({ color: 0x00FF00 }) ) );
     scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 0.01, 5), new THREE.MeshBasicMaterial({ color: 0xFF0000 }) ) );
     */
+    function parseJsonDate(jsonDateString) {
+        return new Date(parseInt(jsonDateString.replace('/Date(', '')));
+    }
+
+    //getJSonData();
+
+    function DateScaleData(i) {
+        if (new Date(bolides[i].Date).valueOf() > DateMin.valueOf() && new Date(bolides[i].Date).valueOf() < DateMax.valueOf()) {
+
+            addBolide(bolides[i]);
+        }
+    }
+
+    function EnergyScaleData(i) {
+
+        if (bolides[i].RadiatedEnergy > SelectedEnergyMin && bolides[i].RadiatedEnergy < SelectedEnergyMax)
+        {
+            addBolide(bolides[i]);
+        }
+          
+
+    }
+
+
+    function getJSonData() {
+        for (var i = 0; i < bolideObjects.length; i++) {
+            scene.remove(bolideObjects[i]);
+        }
+        for (var i = 0; i < bolides.length; i++) {
+            if (new Date(bolides[i].Date).valueOf() > DateMin.valueOf() && new Date(bolides[i].Date).valueOf() < DateMax.valueOf()) {
+
+                if (log10(bolides[i].RadiatedEnergy) > SelectedEnergyMin && log10(bolides[i].RadiatedEnergy < SelectedEnergyMax)) {
+                   
+                    if (bolides[i].ImpactEnergy > SelectedImpactEnergyMin && bolides[i].ImpactEnergy < SelectedImpactEnergyMax) {
+                        addBolide(bolides[i]);
+                    }
+                }
+            }
+        }
+    }
 
     $.getJSON("data/bolides.json", function (data) {
-        //alert(data);
-        
-        for(var i=0;i<data.length; i++){
-            bolides.push(data[i]);
-            addBolide(data[i]);
-            //break;
-        }
 
+        for (var i = 0; i < data.length; i++) {
+            bolides.push(data[i]);
+            if (RadiatedEnergyMax < data[i].RadiatedEnergy) {
+                RadiatedEnergyMax = data[i].RadiatedEnergy;
+            }
+            if (RadiatedEnergyMin > data[i].RadiatedEnergy) {
+                RadiatedEnergyMin = data[i].RadiatedEnergy;
+            }
+            if (ImpactEnergyMax < data[i].ImpactEnergy) {
+                ImpactEnergyMax = data[i].ImpactEnergy;
+            }
+            if (ImpactEnergyMin > data[i].ImpactEnergy) {
+                ImpactEnergyMin = data[i].ImpactEnergy;
+            }
+        }
+        RESlider();
+        IESlider();
     });
-})
+});
