@@ -1,20 +1,205 @@
 require(['threex.planets/package.require.js'
 ], function () {
 
-    if (Detector.webgl)
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-    else
-        renderer = new THREE.CanvasRenderer();
+    var DateMin;
+    var DateMax;
+    var bolides = [];
+    var RadiatedEnergyMin = 1;
+    var RadiatedEnergyMax = 1;
+    var SelectedEnergyMin = 0;
+    var SelectedEnergyMax = 0;
+    var ImpactEnergyMin = 0;
+    var ImpactEnergyMax = 0;
+    var SelectedImpactEnergyMin = 0;
+    var SelectedImpactEnergyMax = 0;
 
+    var AltitudeMin = 0;
+    var AltitudeMax = 0;
+    var SelAltitudeMin = 0;
+    var SelAltitudeMax = 0;
+
+    StartDateMin = new Date(2009, 0, 1);
+
+    $("#element").dateRangeSlider({
+
+        bounds: { min: StartDateMin, max: new Date(2015, 11, 31) },
+        defaultValues: { min: StartDateMin, max: StartDateMin },
+        scales: [{
+            first: function (value) {
+                return value;
+            },
+            end: function (value) {
+                return value;
+            },
+            next: function (value) {
+                var next = new Date(value);
+                return new Date(next.setFullYear(value.getFullYear() + 1));
+            },
+            label: function (value) {
+                return value.getFullYear();
+            },
+            format: function (tickContainer, tickStart, tickEnd) {
+                tickContainer.addClass("ui-ruler-tick");
+            }
+        }],
+
+
+        arrows: false,
+        valueLabels: "change",
+        durationIn: 500,
+        durationOut: 2000,
+        // symmetricPositionning: true,
+        range: { min: 0 },
+        wheelMode: "zoom"
+    });
+
+    function log10(val) {
+        return Math.log(val) / Math.LN10;
+    }
+
+    function RESlider() {
+        //alert(RadiatedEnergyMax);
+        var sc = (log10(RadiatedEnergyMax) - log10(RadiatedEnergyMin)) / 20;
+
+        $("#element2").rangeSlider({
+
+            bounds: { min: log10(RadiatedEnergyMin), max: log10(RadiatedEnergyMax) },
+            defaultValues: { min: log10(RadiatedEnergyMin), max: log10(RadiatedEnergyMax) },
+            formatter: function (val) {
+                var value = Math.pow(10, val);
+                if (value < 100) {
+                    value = Math.round(value / 10) / 100 + "K";
+                } else if (value < 1000) {
+                    value = Math.round(value / 100) / 10 + "K";
+                } else if (value < 100000) {
+                    value = Math.round(value / 1000) + "K";
+                } else if (value < 100000000) {
+                    value = Math.round(value / 1000000) + "M";
+                } else {
+                    value = Math.round(value / 1000000000) + "G";
+                }
+                return value.toString();
+            },
+            scales: [
+        // Primary scale
+          {
+              first: function (val) { return val; },
+              next: function (val) { return val + sc },
+              stop: function (val) { return false; },
+              label: function () { return ""; },
+              format: function (tickContainer, tickStart, tickEnd) {
+                  tickContainer.addClass("ruler-label");
+              }
+          },
+
+            ],
+            arrows: false,
+           // valueLabels: "change",
+
+            // symmetricPositionning: true,
+            range: { min: 0 },
+            wheelMode: "zoom"
+        });
+    }
+
+    function IESlider() {
+        //alert(RadiatedEnergyMax);
+        var sc = (ImpactEnergyMax - ImpactEnergyMin) / 20;
+
+        $("#element3").rangeSlider({
+
+            bounds: { min: (ImpactEnergyMin), max: (ImpactEnergyMax) },
+            defaultValues: { min: (ImpactEnergyMin), max: (ImpactEnergyMax) },
+            scales: [
+        // Primary scale
+          {
+              first: function (val) { return val; },
+              next: function (val) { return val + sc },
+              stop: function (val) { return false; },
+              label: function () { return ""; },
+              format: function (tickContainer, tickStart, tickEnd) {
+                  tickContainer.addClass("ruler-label");
+              }
+          },
+
+            ],
+            arrows: false,
+           // valueLabels: "change",
+
+            // symmetricPositionning: true,
+            range: { min: 0 },
+            wheelMode: "zoom"
+        });
+    }
+
+    function AltSlider() {
+        //alert(RadiatedEnergyMax);
+        var sc = (AltitudeMax - AltitudeMin) / 20;
+
+        $("#element4").rangeSlider({
+
+            bounds: { min: (AltitudeMin), max: (AltitudeMax) },
+            defaultValues: { min: (AltitudeMin), max: (AltitudeMax) },
+            scales: [
+        // Primary scale
+          {
+              first: function (val) { return val; },
+              next: function (val) { return val + sc },
+              stop: function (val) { return false; },
+              label: function () { return ""; },
+              format: function (tickContainer, tickStart, tickEnd) {
+                  tickContainer.addClass("ruler-label");
+              }
+          },
+
+            ],
+            arrows: false,
+          //  valueLabels: "change",
+
+            // symmetricPositionning: true,
+            range: { min: 0 },
+            wheelMode: "zoom"
+        });
+    }
+
+    $("#element").bind("valuesChanging", function (e, data) {
+        DateMin = data.values.min;
+        DateMax = data.values.max;
+        getJSonData();
+    });
+
+    $("#element").bind("valuesChanged", function (e, data) {
+        DateMin = data.values.min;
+        DateMax = data.values.max;
+        getJSonData();
+    });
+
+    $("#element2").bind("valuesChanging", function (e, data) {
+        SelectedEnergyMin = data.values.min;
+        SelectedEnergyMax = data.values.max;
+        getJSonData();
+    });
+
+    $("#element3").bind("valuesChanging", function (e, data) {
+        SelectedImpactEnergyMin = data.values.min;
+        SelectedImpactEnergyMax = data.values.max;
+        getJSonData();
+    });
+
+    $("#element4").bind("valuesChanging", function (e, data) {
+        SelAltitudeMin = data.values.min;
+        SelAltitudeMax = data.values.max;
+        getJSonData();
+    });
+
+    var renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
     var onRenderFcts = [];
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
-    camera.position.x = 1.0687713212237027;
-    camera.position.y = 1.1071055030683448;
-    camera.position.z = -0.5345343704213782;
+    camera.position.z = 1.5;
 
     var light = new THREE.AmbientLight(0x888888)
     scene.add(light)
@@ -27,7 +212,7 @@ require(['threex.planets/package.require.js'
     //      add an object and make it move                  //
     //////////////////////////////////////////////////////////////////////////////////  
     function createEarth() {
-        var geometry    = new THREE.SphereGeometry(0.5, 32, 32);
+        var geometry = new THREE.SphereGeometry(0.5, 32, 32);
 
         //var loader = new THREE.DDSLoader();
         //var map = loader.load( 'images/earthmap7k.dds' );
@@ -37,16 +222,16 @@ require(['threex.planets/package.require.js'
         //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
         var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
 
-        var material    = new THREE.MeshPhongMaterial({
-            map     : map,
+        var material = new THREE.MeshPhongMaterial({
+            map: map,
             //bumpMap       : bumpMap,
-            bumpScale   : 0.05,
-            specularMap : specularMap,
-            specular    : new THREE.Color('grey'),
+            bumpScale: 0.05,
+            specularMap: specularMap,
+            specular: new THREE.Color('grey'),
         })
 
-        var mesh    = new THREE.Mesh(geometry, material)
-        return mesh 
+        var mesh = new THREE.Mesh(geometry, material)
+        return mesh
     }
 
     var earthMesh = createEarth();
@@ -54,9 +239,9 @@ require(['threex.planets/package.require.js'
 
     var center = new THREE.Vector3(0, 0, 0);
 
-    //onRenderFcts.push(function (delta, now) {
-    //    camera.lookAt(center);
-    //});
+    onRenderFcts.push(function (delta, now) {
+        camera.lookAt(center);
+    });
 
     var cloudMesh = THREEx.Planets.createEarthCloud()
     scene.add(cloudMesh)
@@ -73,7 +258,6 @@ require(['threex.planets/package.require.js'
     var geometry = new THREE.SphereGeometry(90, 32, 32)
     var material = new THREE.MeshBasicMaterial()
     material.map = THREE.ImageUtils.loadTexture('threex.planets/images/galaxy_starfield.png')
-    //material.map = THREE.ImageUtils.loadTexture('images/sky_8192x4096.png')
     material.side = THREE.BackSide
     var mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
@@ -81,17 +265,17 @@ require(['threex.planets/package.require.js'
     //////////////////////////////////////////////////////////////////////////////////
     //      Camera Controls                         //
     //////////////////////////////////////////////////////////////////////////////////
-    //var projector = new THREE.Projector();
-    //var ray = new THREE.Raycaster(camera.position, null);
+    var projector = new THREE.Projector();
+    var ray = new THREE.Raycaster(camera.position, null);
 
-    //var mouse = { x: 0, y: 0 }
-    //var mouse3D, isMouseDown = false, onMouseDownPosition = new THREE.Vector2(),
-    //    radious = 1.5, theta = 45, onMouseDownTheta = 45, phi = 60, onMouseDownPhi = 60;
+    var mouse = { x: 0, y: 0 }
+    var mouse3D, isMouseDown = false, onMouseDownPosition = new THREE.Vector2(),
+        radious = 1.5, theta = 45, onMouseDownTheta = 45, phi = 60, onMouseDownPhi = 60;
 
-    //camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-    //camera.position.y = radious * Math.sin(phi * Math.PI / 360);
-    //camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-    //camera.updateMatrix();
+    camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+    camera.position.y = radious * Math.sin(phi * Math.PI / 360);
+    camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
+    camera.updateMatrix();
 
     function onDocumentMouseDown(event) {
 
@@ -135,53 +319,53 @@ require(['threex.planets/package.require.js'
 
     function onDocumentMouseUp(event) {
 
-        //event.preventDefault();
+        event.preventDefault();
 
-        //isMouseDown = false;
+        isMouseDown = false;
 
-        //onMouseDownPosition.x = event.clientX - onMouseDownPosition.x;
-        //onMouseDownPosition.y = event.clientY - onMouseDownPosition.y;
+        onMouseDownPosition.x = event.clientX - onMouseDownPosition.x;
+        onMouseDownPosition.y = event.clientY - onMouseDownPosition.y;
 
-        //if (onMouseDownPosition.length() > 5) {
+        if (onMouseDownPosition.length() > 5) {
 
-        //    return;
+            return;
 
-        //}
+        }
 
-        //var intersect, intersects = ray.intersectScene(scene);
+        var intersect, intersects = ray.intersectScene(scene);
 
-        //if (intersects.length > 0) {
+        if (intersects.length > 0) {
 
-        //    //intersect = intersects[0].object == brush ? intersects[1] : intersects[0];
+            //intersect = intersects[0].object == brush ? intersects[1] : intersects[0];
 
-        //    //if (intersect) {
+            //if (intersect) {
 
-        //    //    if (isShiftDown) {
+            //    if (isShiftDown) {
 
-        //    //        if (intersect.object != plane) {
+            //        if (intersect.object != plane) {
 
-        //    //            scene.removeObject(intersect.object);
+            //            scene.removeObject(intersect.object);
 
-        //    //        }
+            //        }
 
-        //    //    } else {
+            //    } else {
 
-        //    //        var position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
+            //        var position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
 
-        //    //        var voxel = new THREE.Mesh(cube, new THREE.MeshColorFillMaterial(colors[color]));
-        //    //        voxel.position.x = Math.floor(position.x / 50) * 50 + 25;
-        //    //        voxel.position.y = Math.floor(position.y / 50) * 50 + 25;
-        //    //        voxel.position.z = Math.floor(position.z / 50) * 50 + 25;
-        //    //        voxel.overdraw = true;
-        //    //        scene.addObject(voxel);
+            //        var voxel = new THREE.Mesh(cube, new THREE.MeshColorFillMaterial(colors[color]));
+            //        voxel.position.x = Math.floor(position.x / 50) * 50 + 25;
+            //        voxel.position.y = Math.floor(position.y / 50) * 50 + 25;
+            //        voxel.position.z = Math.floor(position.z / 50) * 50 + 25;
+            //        voxel.overdraw = true;
+            //        scene.addObject(voxel);
 
-        //    //    }
+            //    }
 
-        //    //}
+            //}
 
-        //}
+        }
 
-        //updateHash();
+        updateHash();
         interact();
         render();
 
@@ -201,16 +385,14 @@ require(['threex.planets/package.require.js'
 
     }
 
-    //document.addEventListener('mousemove', onDocumentMouseMove, false);
-    //document.addEventListener('mousedown', onDocumentMouseDown, false);
+    document.addEventListener('mousemove', onDocumentMouseMove, false);
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
     document.addEventListener('mouseup', onDocumentMouseUp, false);
 
-    //document.addEventListener('mousewheel', onDocumentMouseWheel, false);
+    document.addEventListener('mousewheel', onDocumentMouseWheel, false);
 
     function interact() {
-        console.log(camera.position.x);
-        console.log(camera.position.y);
-        console.log(camera.position.z);
+
         //if (objectHovered) {
 
         //    objectHovered.material[0].color.a = 1;
@@ -259,25 +441,8 @@ require(['threex.planets/package.require.js'
 
     }
 
-    function animate() {
-        requestAnimationFrame(animate);
-        render();
-        update();
-    }
-
-    function update() {
-        if (keyboard.pressed("z")) {
-            // do something
-        }
-        var delta = clock.getDelta();
-        //customUniforms.time.value += delta;
-        controls.update();
-    }
-
     function render() {
         renderer.render(scene, camera);
-        //controls.update();
-        //controls.rotateUp(-0.001);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -304,13 +469,10 @@ require(['threex.planets/package.require.js'
         })
     })
 
-    function addBall(bolideSize) {
-    }
-
     var map = THREE.ImageUtils.loadTexture('images/bolide-small.jpg');
 
-    var material    = new THREE.MeshPhongMaterial({
-        map     : map,
+    var material = new THREE.MeshPhongMaterial({
+        map: map,
         //bumpMap       : bumpMap,
         //bumpScale   : 0.05,
         //specularMap : specularMap,
@@ -319,141 +481,52 @@ require(['threex.planets/package.require.js'
 
     //material = new THREE.MeshBasicMaterial({ color: 0xFFFF88 });
 
-    function createBolide(bolideSize) {
-        //var geometry = new THREE.SphereGeometry(bolideSize, 8, 8);
-        //var mesh = new THREE.Mesh(geometry, material);
-
-        // base image texture for mesh
-        var lavaTexture = new THREE.ImageUtils.loadTexture('images/lava.jpg');
-        lavaTexture.wrapS = lavaTexture.wrapT = THREE.RepeatWrapping;
-        // multiplier for distortion speed 		
-        var baseSpeed = 0.02;
-        // number of times to repeat texture in each direction
-        var repeatS = repeatT = 4.0;
-
-        // texture used to generate "randomness", distort all other textures
-        var noiseTexture = new THREE.ImageUtils.loadTexture('images/cloud.png');
-        noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
-        // magnitude of noise effect
-        var noiseScale = 0.5;
-
-        // texture to additively blend with base image texture
-        var blendTexture = new THREE.ImageUtils.loadTexture('images/lava.jpg');
-        blendTexture.wrapS = blendTexture.wrapT = THREE.RepeatWrapping;
-        // multiplier for distortion speed 
-        var blendSpeed = 0.01;
-        // adjust lightness/darkness of blended texture
-        var blendOffset = 0.25;
-
-        // texture to determine normal displacement
-        var bumpTexture = noiseTexture;
-        bumpTexture.wrapS = bumpTexture.wrapT = THREE.RepeatWrapping;
-        // multiplier for distortion speed 		
-        var bumpSpeed = 0.15;
-        // magnitude of normal displacement
-        var bumpScale = bolideSize * 2;
-
-        // use "this." to create global object
-        var customUniforms = {
-            baseTexture: { type: "t", value: lavaTexture },
-            baseSpeed: { type: "f", value: baseSpeed },
-            repeatS: { type: "f", value: repeatS },
-            repeatT: { type: "f", value: repeatT },
-            noiseTexture: { type: "t", value: noiseTexture },
-            noiseScale: { type: "f", value: noiseScale },
-            blendTexture: { type: "t", value: blendTexture },
-            blendSpeed: { type: "f", value: blendSpeed },
-            blendOffset: { type: "f", value: blendOffset },
-            bumpTexture: { type: "t", value: bumpTexture },
-            bumpSpeed: { type: "f", value: bumpSpeed },
-            bumpScale: { type: "f", value: bumpScale },
-            alpha: { type: "f", value: 1.0 },
-            time: { type: "f", value: 1.0 }
-        };
-
-        // create custom material from the shader code above
-        //   that is within specially labeled script tags
-        var customMaterial = new THREE.ShaderMaterial(
-        {
-            uniforms: customUniforms,
-            vertexShader: document.getElementById('vertexShader').textContent,
-            fragmentShader: document.getElementById('fragmentShader').textContent
-        });
-
-        var bolideGeometry = new THREE.SphereGeometry(bolideSize, 16, 16);
-        var bolideMesh = new THREE.Mesh(bolideGeometry, customMaterial);
-
-        onRenderFcts.push(function callback(delta, now) {
-            customUniforms.time.value += delta;
-        });
-
-        return bolideMesh;
+    function createBolide() {
+        var geometry = new THREE.SphereGeometry(0.5, 4, 4);
+        var mesh = new THREE.Mesh(geometry, material);
+        return mesh;
     }
 
     //
-    var bolides = [];
+
+    var bolideObjects = [];
     //
-
-    var bolideGeometry = new THREE.Geometry();
-
     function addBolide(bol) {
 
-        var bolideSize = 0.005;
-        var bolideRadius = 0.65;
+        //if( bol.Latitude != "54.8N" ) return;
 
-        
-        var phi = parseFloat( bol.Latitude.slice(0, -1) );
-        var theta = parseFloat( bol.Longitude.slice(0, -1) );
+        var bolideSize = 0.01;
+        var bolideRadius = 0.54;
 
-        if( bol.Latitude.slice(-1) == "S" ) phi = -phi;
-        if( bol.Longitude.slice(-1) == "W" ) theta = -theta;
+
+        var phi = parseFloat(bol.Latitude.slice(0, -1));
+        var theta = parseFloat(bol.Longitude.slice(0, -1));
+
+        if (bol.Latitude.slice(-1) == "S") phi = -phi;
+        if (bol.Longitude.slice(-1) == "W") theta = -theta;
 
         theta += 90;
 
-        var dx = Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-        var dy = Math.sin(phi * Math.PI / 180);
-        var dz = Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+        //phi = 0; theta = 90;
 
-        var bolide = createBolide(bolideSize);
+        //console.log(phi + " : " + theta);
 
-        bolide.position.x = bolideRadius * dx;
-        bolide.position.y = bolideRadius * dy;
-        bolide.position.z = bolideRadius * dz;
+        for (var i = 0; i < 1; i++) {
 
-        scene.add(bolide);
+            var bolide = createBolide();
+            scene.add(bolide);
+            bolide.scale.set(bolideSize, bolideSize, bolideSize);
 
-        onRenderFcts.push(function callback(delta, now) {
-            bolideRadius -= delta / 100;
+            bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+            bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 180);
+            bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+            bolide.updateMatrix();
 
-            if (bolideRadius < 0.51) {
-                onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
-                return;
-            }
+            theta += 1.5;
 
-            bolide.position.x = bolideRadius * dx;
-            bolide.position.y = bolideRadius * dy;
-            bolide.position.z = bolideRadius * dz;
-        })
+        }
 
-        //for( var i = 0; i < 10; i++ ) {
-
-        ////scene.add(bolide);
-        ////bolide.scale.set(bolideSize, bolideSize, bolideSize);
-
-        //bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-        //bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 180);
-        //bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-
-        //THREE.GeometryUtils.merge(bolideGeometry, bolide);
-
-        //bolide.matrix.set(new THREE.Matrix4());
-
-        ////theta += 1.5;
-        ////phi += 0.1;
-
-        //bolideRadius += 0.005;
-
-        //}
+        bolideObjects.push(bolide);
     }
 
     // other
@@ -463,33 +536,90 @@ require(['threex.planets/package.require.js'
     scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 5, 0.01), new THREE.MeshBasicMaterial({ color: 0x00FF00 }) ) );
     scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 0.01, 5), new THREE.MeshBasicMaterial({ color: 0xFF0000 }) ) );
     */
+    function parseJsonDate(jsonDateString) {
+        return new Date(parseInt(jsonDateString.replace('/Date(', '')));
+    }
 
-    THREEx.WindowResize(renderer, camera);
-    THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
-    // CONTROLS
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.minDistance = 0.65;
-    controls.maxDistance = 2;
-    controls.noPan = true;
+
+
+    function getJSonData() {
+        for (var i = 0; i < bolideObjects.length; i++) {
+            scene.remove(bolideObjects[i]);
+        }
+        bolideObjects = [];
+
+        for (var i = 0; i < bolides.length; i++) {
+            if (new Date(bolides[i].Date).valueOf() >= DateMin.valueOf() && new Date(bolides[i].Date).valueOf() <= DateMax.valueOf()) {
+
+                if (!bolides[i].RadiatedEnergy || ( log10(bolides[i].RadiatedEnergy) >= SelectedEnergyMin && log10(bolides[i].RadiatedEnergy <= SelectedEnergyMax)) ) {
+
+                    if ( !bolides[i].ImpactEnergy || (bolides[i].ImpactEnergy >= SelectedImpactEnergyMin && bolides[i].ImpactEnergy <= SelectedImpactEnergyMax) ) {
+                        if ( !bolides[i].Altitude || (bolides[i].Altitude >= SelAltitudeMin && bolides[i].Altitude <= SelAltitudeMax) ) {
+                            addBolide(bolides[i]);
+                        }
+                    }
+                }
+            }
+        }
+        //render();
+    }
+
+    function StartAnimation() {
+        var temp = StartDateMin;
+        var DateEnd = new Date(2015, 11, 31);
+        var animate = function () {
+            if (temp < DateEnd) {
+                temp = new Date(temp.getFullYear(), temp.getMonth() + 1, temp.getDate());
+                $("#element").dateRangeSlider("values", StartDateMin, temp);
+                //getJSonData();
+                window.setTimeout(animate, 100);
+            }
+        }
+        animate();
+    }
 
     $.getJSON("data/bolides.json", function (data) {
-        //alert(data);
 
-        setTimeout(function () {
-            for (var i = 0; i < data.length; i++) {
-                bolides.push(data[i]);
-                addBolide(data[i]);
-                //break;
+        for (var i = 0; i < data.length; i++) {
+            bolides.push(data[i]);
+            if (RadiatedEnergyMax < data[i].RadiatedEnergy) {
+                RadiatedEnergyMax = data[i].RadiatedEnergy;
             }
+            SelectedEnergyMax = log10(RadiatedEnergyMax);
 
-            controls.autoRotate = true;
-        }, 1000);
+            if (RadiatedEnergyMin > data[i].RadiatedEnergy) {
+                RadiatedEnergyMin = data[i].RadiatedEnergy;
+            }
+            SelectedEnergyMin = log10(RadiatedEnergyMin);
 
-        //bolideGeometry.computeFaceNormals();
-        //group = new THREE.Mesh(bolideGeometry, material);
-        //group.matrixAutoUpdate = false;
-        //group.updateMatrix();
-        //scene.add(group);
+            //
+            if (ImpactEnergyMax < data[i].ImpactEnergy) {
+                ImpactEnergyMax = data[i].ImpactEnergy;
+            }
+            SelectedImpactEnergyMax = ImpactEnergyMax;
 
+            if (ImpactEnergyMin > data[i].ImpactEnergy) {
+                ImpactEnergyMin = data[i].ImpactEnergy;
+            }
+            SelectedImpactEnergyMin = ImpactEnergyMin;
+
+            //
+            if (AltitudeMax < data[i].Altitude) {
+                AltitudeMax = data[i].Altitude;
+            }
+            SelAltitudeMax = AltitudeMax;
+
+            if (AltitudeMin > data[i].Altitude) {
+                AltitudeMin = data[i].Altitude;
+            }
+            SelAltitudeMin = AltitudeMin;
+
+            //
+        }
+        RESlider();
+        IESlider();
+        AltSlider();
+        StartAnimation();
     });
-})
+
+});
