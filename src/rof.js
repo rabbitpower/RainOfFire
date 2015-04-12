@@ -398,9 +398,9 @@ require(['threex.planets/package.require.js'
     //document.addEventListener('mousewheel', onDocumentMouseWheel, false);
 
     function interact() {
-        console.log(camera.position.x);
-        console.log(camera.position.y);
-        console.log(camera.position.z);
+        //console.log(camera.position.x);
+        //console.log(camera.position.y);
+        //console.log(camera.position.z);
         //if (objectHovered) {
 
         //    objectHovered.material[0].color.a = 1;
@@ -467,7 +467,7 @@ require(['threex.planets/package.require.js'
     function render() {
         renderer.render(scene, camera);
         controls.update();
-        controls.rotateUp(-0.0002);
+        //controls.rotateUp(-0.0002);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -506,7 +506,11 @@ require(['threex.planets/package.require.js'
 
     //material = new THREE.MeshBasicMaterial({ color: 0xFFFF88 });
 
-    function createBolide(bolideSize) {
+    //
+    var bolideObjects = [];
+    //
+
+    function createBolide(index, bolideSize) {
         //var geometry = new THREE.SphereGeometry(bolideSize, 8, 8);
         //var mesh = new THREE.Mesh(geometry, material);
 
@@ -571,15 +575,16 @@ require(['threex.planets/package.require.js'
         var bolideMesh = new THREE.Mesh(bolideGeometry, customMaterial);
 
         onRenderFcts.push(function callback(delta, now) {
+            if (!bolideObjects[index]) {
+                onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
+                return;
+            }
+
             customUniforms.time.value += delta;
         });
 
         return bolideMesh;
     }
-
-    //
-    var bolideObjects = [];
-    //
 
     var bolideGeometry = new THREE.Geometry();
 
@@ -603,7 +608,7 @@ require(['threex.planets/package.require.js'
         var dy = Math.sin(phi * Math.PI / 180);
         var dz = Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
 
-        var bolide = createBolide(bolideSize);
+        var bolide = createBolide(index, bolideSize);
 
         bolide.position.x = bolideRadius * dx;
         bolide.position.y = bolideRadius * dy;
@@ -614,7 +619,7 @@ require(['threex.planets/package.require.js'
         onRenderFcts.push(function callback(delta, now) {
             bolideRadius -= delta / 100;
 
-            if (bolideRadius < 0.51) {
+            if (bolideRadius < 0.51 || !bolideObjects[index]) {
                 onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
                 return;
             }
@@ -677,6 +682,8 @@ require(['threex.planets/package.require.js'
         //bolideObjects = [];
 
         for (var i = 0; i < bolides.length; i++) {
+            var visible = false;
+
             if (new Date(bolides[i].Date).valueOf() >= DateMin.valueOf() && new Date(bolides[i].Date).valueOf() <= DateMax.valueOf()) {
 
                 if (!bolides[i].RadiatedEnergy || ( log10(bolides[i].RadiatedEnergy) >= SelectedEnergyMin && log10(bolides[i].RadiatedEnergy <= SelectedEnergyMax)) ) {
@@ -684,9 +691,15 @@ require(['threex.planets/package.require.js'
                     if ( !bolides[i].ImpactEnergy || (bolides[i].ImpactEnergy >= SelectedImpactEnergyMin && bolides[i].ImpactEnergy <= SelectedImpactEnergyMax) ) {
                         if (!bolides[i].Altitude || (bolides[i].Altitude >= SelAltitudeMin && bolides[i].Altitude <= SelAltitudeMax)) {
                             addBolide(i, bolides[i]);
+                            visible = true;
                         }
                     }
                 }
+            }
+
+            if(!visible) {
+                scene.remove(bolideObjects[i]);
+                bolideObjects[i] = null;
             }
         }
         //render();
@@ -697,10 +710,14 @@ require(['threex.planets/package.require.js'
         var DateEnd = new Date(2015, 11, 31);
         var animate = function () {
             if (temp < DateEnd) {
-                temp = new Date(temp.getFullYear(), temp.getMonth() + 1, temp.getDate());
+                temp = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate() + 4);
                 $("#element").dateRangeSlider("values", StartDateMin, temp);
                 //getJSonData();
                 window.setTimeout(animate, 100);
+            }
+            else
+            {
+                controls.autoRotate = false;
             }
         }
         animate();
