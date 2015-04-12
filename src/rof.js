@@ -277,7 +277,7 @@ require(['threex.planets/package.require.js'
         })
     })
 
-    var map = THREE.ImageUtils.loadTexture('images/bolide-small.jpg');
+    var map = THREE.ImageUtils.loadTexture('images/bolide-red.jpg');
 
     var material    = new THREE.MeshPhongMaterial({
         map     : map,
@@ -290,7 +290,7 @@ require(['threex.planets/package.require.js'
     //material = new THREE.MeshBasicMaterial({ color: 0xFFFF88 });
 
     function createBolide() {
-        var geometry = new THREE.SphereGeometry(0.5, 4, 4);
+        var geometry = new THREE.SphereGeometry(0.5, 16, 16);
         var mesh = new THREE.Mesh(geometry, material);
         return mesh ;
     }
