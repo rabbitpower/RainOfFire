@@ -6,18 +6,24 @@ require(['threex.planets/package.require.js'
     var bolides = [];
     var RadiatedEnergyMin = 1;
     var RadiatedEnergyMax = 1;
-    var SelectedEnergyMin = 1;
-    var SelectedEnergyMax = 1;
+    var SelectedEnergyMin = 0;
+    var SelectedEnergyMax = 0;
     var ImpactEnergyMin = 0;
     var ImpactEnergyMax = 0;
     var SelectedImpactEnergyMin = 0;
     var SelectedImpactEnergyMax = 0;
 
+    var AltitudeMin = 0;
+    var AltitudeMax = 0;
+    var SelAltitudeMin = 0;
+    var SelAltitudeMax = 0;
+
+    StartDateMin = new Date(2009, 0, 1);
 
     $("#element").dateRangeSlider({
 
-        bounds: { min: new Date(2009, 0, 1), max: new Date(2015, 11, 31, 12, 59, 59) },
-        defaultValues: { min: new Date(2014, 1, 10), max: new Date(2014, 4, 22) },
+        bounds: { min: StartDateMin, max: new Date(2015, 11, 31) },
+        defaultValues: { min: StartDateMin, max: StartDateMin },
         scales: [{
             first: function (value) {
                 return value;
@@ -56,7 +62,7 @@ require(['threex.planets/package.require.js'
         var sc = (log10(RadiatedEnergyMax) - log10(RadiatedEnergyMin)) / 20;
 
         $("#element2").rangeSlider({
-            
+
             bounds: { min: log10(RadiatedEnergyMin), max: log10(RadiatedEnergyMax) },
             defaultValues: { min: log10(RadiatedEnergyMin), max: log10(RadiatedEnergyMax) },
             formatter: function (val) {
@@ -78,19 +84,18 @@ require(['threex.planets/package.require.js'
         // Primary scale
           {
               first: function (val) { return val; },
-              next: function (val) { return val+sc },
+              next: function (val) { return val + sc },
               stop: function (val) { return false; },
               label: function () { return ""; },
               format: function (tickContainer, tickStart, tickEnd) {
                   tickContainer.addClass("ruler-label");
               }
           },
-         
+
             ],
             arrows: false,
-            valueLabels: "change",
-            durationIn: 500,
-            durationOut: 2000,
+           // valueLabels: "change",
+
             // symmetricPositionning: true,
             range: { min: 0 },
             wheelMode: "zoom"
@@ -99,12 +104,12 @@ require(['threex.planets/package.require.js'
 
     function IESlider() {
         //alert(RadiatedEnergyMax);
-        var sc = (ImpactEnergyMax - ImpactEnergyMin) / 2;
+        var sc = (ImpactEnergyMax - ImpactEnergyMin) / 20;
 
         $("#element3").rangeSlider({
 
             bounds: { min: (ImpactEnergyMin), max: (ImpactEnergyMax) },
-            defaultValues: { min: (ImpactEnergyMin), max: (ImpactEnergyMax) },          
+            defaultValues: { min: (ImpactEnergyMin), max: (ImpactEnergyMax) },
             scales: [
         // Primary scale
           {
@@ -119,9 +124,38 @@ require(['threex.planets/package.require.js'
 
             ],
             arrows: false,
-            valueLabels: "change",
-            durationIn: 500,
-            durationOut: 2000,
+           // valueLabels: "change",
+
+            // symmetricPositionning: true,
+            range: { min: 0 },
+            wheelMode: "zoom"
+        });
+    }
+
+    function AltSlider() {
+        //alert(RadiatedEnergyMax);
+        var sc = (AltitudeMax - AltitudeMin) / 20;
+
+        $("#element4").rangeSlider({
+
+            bounds: { min: (AltitudeMin), max: (AltitudeMax) },
+            defaultValues: { min: (AltitudeMin), max: (AltitudeMax) },
+            scales: [
+        // Primary scale
+          {
+              first: function (val) { return val; },
+              next: function (val) { return val + sc },
+              stop: function (val) { return false; },
+              label: function () { return ""; },
+              format: function (tickContainer, tickStart, tickEnd) {
+                  tickContainer.addClass("ruler-label");
+              }
+          },
+
+            ],
+            arrows: false,
+          //  valueLabels: "change",
+
             // symmetricPositionning: true,
             range: { min: 0 },
             wheelMode: "zoom"
@@ -129,6 +163,12 @@ require(['threex.planets/package.require.js'
     }
 
     $("#element").bind("valuesChanging", function (e, data) {
+        DateMin = data.values.min;
+        DateMax = data.values.max;
+        getJSonData();
+    });
+
+    $("#element").bind("valuesChanged", function (e, data) {
         DateMin = data.values.min;
         DateMax = data.values.max;
         getJSonData();
@@ -143,6 +183,12 @@ require(['threex.planets/package.require.js'
     $("#element3").bind("valuesChanging", function (e, data) {
         SelectedImpactEnergyMin = data.values.min;
         SelectedImpactEnergyMax = data.values.max;
+        getJSonData();
+    });
+
+    $("#element4").bind("valuesChanging", function (e, data) {
+        SelAltitudeMin = data.values.min;
+        SelAltitudeMax = data.values.max;
         getJSonData();
     });
 
@@ -463,7 +509,7 @@ require(['threex.planets/package.require.js'
 
         //phi = 0; theta = 90;
 
-        console.log(phi + " : " + theta);
+        //console.log(phi + " : " + theta);
 
         for (var i = 0; i < 1; i++) {
 
@@ -494,41 +540,42 @@ require(['threex.planets/package.require.js'
         return new Date(parseInt(jsonDateString.replace('/Date(', '')));
     }
 
-    //getJSonData();
-
-    function DateScaleData(i) {
-        if (new Date(bolides[i].Date).valueOf() > DateMin.valueOf() && new Date(bolides[i].Date).valueOf() < DateMax.valueOf()) {
-
-            addBolide(bolides[i]);
-        }
-    }
-
-    function EnergyScaleData(i) {
-
-        if (bolides[i].RadiatedEnergy > SelectedEnergyMin && bolides[i].RadiatedEnergy < SelectedEnergyMax)
-        {
-            addBolide(bolides[i]);
-        }
-          
-
-    }
 
 
     function getJSonData() {
         for (var i = 0; i < bolideObjects.length; i++) {
             scene.remove(bolideObjects[i]);
         }
-        for (var i = 0; i < bolides.length; i++) {
-            if (new Date(bolides[i].Date).valueOf() > DateMin.valueOf() && new Date(bolides[i].Date).valueOf() < DateMax.valueOf()) {
+        bolideObjects = [];
 
-                if (log10(bolides[i].RadiatedEnergy) > SelectedEnergyMin && log10(bolides[i].RadiatedEnergy < SelectedEnergyMax)) {
-                   
-                    if (bolides[i].ImpactEnergy > SelectedImpactEnergyMin && bolides[i].ImpactEnergy < SelectedImpactEnergyMax) {
-                        addBolide(bolides[i]);
+        for (var i = 0; i < bolides.length; i++) {
+            if (new Date(bolides[i].Date).valueOf() >= DateMin.valueOf() && new Date(bolides[i].Date).valueOf() <= DateMax.valueOf()) {
+
+                if (!bolides[i].RadiatedEnergy || ( log10(bolides[i].RadiatedEnergy) >= SelectedEnergyMin && log10(bolides[i].RadiatedEnergy <= SelectedEnergyMax)) ) {
+
+                    if ( !bolides[i].ImpactEnergy || (bolides[i].ImpactEnergy >= SelectedImpactEnergyMin && bolides[i].ImpactEnergy <= SelectedImpactEnergyMax) ) {
+                        if ( !bolides[i].Altitude || (bolides[i].Altitude >= SelAltitudeMin && bolides[i].Altitude <= SelAltitudeMax) ) {
+                            addBolide(bolides[i]);
+                        }
                     }
                 }
             }
         }
+        //render();
+    }
+
+    function StartAnimation() {
+        var temp = StartDateMin;
+        var DateEnd = new Date(2015, 11, 31);
+        var animate = function () {
+            if (temp < DateEnd) {
+                temp = new Date(temp.getFullYear(), temp.getMonth() + 1, temp.getDate());
+                $("#element").dateRangeSlider("values", StartDateMin, temp);
+                //getJSonData();
+                window.setTimeout(animate, 100);
+            }
+        }
+        animate();
     }
 
     $.getJSON("data/bolides.json", function (data) {
@@ -538,17 +585,41 @@ require(['threex.planets/package.require.js'
             if (RadiatedEnergyMax < data[i].RadiatedEnergy) {
                 RadiatedEnergyMax = data[i].RadiatedEnergy;
             }
+            SelectedEnergyMax = log10(RadiatedEnergyMax);
+
             if (RadiatedEnergyMin > data[i].RadiatedEnergy) {
                 RadiatedEnergyMin = data[i].RadiatedEnergy;
             }
+            SelectedEnergyMin = log10(RadiatedEnergyMin);
+
+            //
             if (ImpactEnergyMax < data[i].ImpactEnergy) {
                 ImpactEnergyMax = data[i].ImpactEnergy;
             }
+            SelectedImpactEnergyMax = ImpactEnergyMax;
+
             if (ImpactEnergyMin > data[i].ImpactEnergy) {
                 ImpactEnergyMin = data[i].ImpactEnergy;
             }
+            SelectedImpactEnergyMin = ImpactEnergyMin;
+
+            //
+            if (AltitudeMax < data[i].Altitude) {
+                AltitudeMax = data[i].Altitude;
+            }
+            SelAltitudeMax = AltitudeMax;
+
+            if (AltitudeMin > data[i].Altitude) {
+                AltitudeMin = data[i].Altitude;
+            }
+            SelAltitudeMin = AltitudeMin;
+
+            //
         }
         RESlider();
         IESlider();
+        AltSlider();
+        StartAnimation();
     });
+
 });
