@@ -221,15 +221,15 @@ require(['threex.planets/package.require.js'
     //      add an object and make it move                  //
     //////////////////////////////////////////////////////////////////////////////////  
     function createEarth() {
-        var geometry = new THREE.SphereGeometry(0.5, 32, 32);
+        var geometry = new THREE.SphereGeometry(0.5, 64, 64);
 
         //var loader = new THREE.DDSLoader();
         //var map = loader.load( 'images/earthmap7k.dds' );
 
-        var map = THREE.ImageUtils.loadTexture('images/earthmap7k.jpg');
+        var map = THREE.ImageUtils.loadTexture('images/earthmap8k.jpg');
 
         //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
-        var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k.jpg');
+        var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k_optimized.jpg');
 
         var material = new THREE.MeshPhongMaterial({
             map: map,
