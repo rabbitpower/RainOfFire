@@ -206,9 +206,9 @@ require(['threex.planets/package.require.js'
     var onRenderFcts = [];
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
-    camera.position.x = 1.0687713212237027;
-    camera.position.y = 1.1071055030683448;
-    camera.position.z = -0.5345343704213782;
+    camera.position.x = 0.5369996722951439;
+    camera.position.y = 1.1648934719530957;
+    camera.position.z = 1.1496685032579688;
 
     var light = new THREE.AmbientLight(0x888888)
     scene.add(light)
@@ -221,7 +221,7 @@ require(['threex.planets/package.require.js'
     //      add an object and make it move                  //
     //////////////////////////////////////////////////////////////////////////////////  
     function createEarth() {
-        var geometry = new THREE.SphereGeometry(0.5, 64, 64);
+        var geometry = new THREE.SphereGeometry(0.5, 64, 32);
 
         //var loader = new THREE.DDSLoader();
         //var map = loader.load( 'images/earthmap7k.dds' );
@@ -240,6 +240,7 @@ require(['threex.planets/package.require.js'
         })
 
         var mesh = new THREE.Mesh(geometry, material)
+        mesh.rotation.y = -Math.PI / 2;
         return mesh
     }
 
@@ -596,40 +597,63 @@ require(['threex.planets/package.require.js'
         if (bolideObjects[index]) return;
 
         var bolideSize = 0.005;
-        var bolideRadius = 0.65;
 
-        
+        var bolideMinDistance = 0.51;
+
+        var bolideFallTime = 4;
+
+        var bolideTime = bolideFallTime;
+
         var phi = parseFloat( bol.Latitude.slice(0, -1) );
         var theta = parseFloat( bol.Longitude.slice(0, -1) );
 
         if( bol.Latitude.slice(-1) == "S" ) phi = -phi;
         if( bol.Longitude.slice(-1) == "W" ) theta = -theta;
 
-        theta += 90;
-
         var dx = Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
         var dy = Math.sin(phi * Math.PI / 180);
         var dz = Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
 
+        var dxo = -dx / bolideFallTime, dyo = -dy / bolideFallTime, dzo = -dz / bolideFallTime;
+
         var bolide = createBolide(index, bolideSize);
 
-        bolide.position.x = bolideRadius * dx;
-        bolide.position.y = bolideRadius * dy;
-        bolide.position.z = bolideRadius * dz;
+        if (bol.vx != null && bol.vy != null && bol.vz != null) {
+            var v = new THREE.Vector3(bol.vx, bol.vy, bol.vz);
+            v.divideScalar(100);
+
+            // Taken from NASA's Fireball and Bolide Reports description of the Velocity Components:
+            // The pre-impact velocity components are expressed in a geocentric Earth-fixed reference frame defined as follows: 
+            // the z-axis is directed along the Earth's rotation axis towards the celestial north pole, 
+            // the x-axis lies in the Earth's equatorial plane, directed towards the prime meridian, 
+            // and the y-axis completes the right-handed coordinate system.
+            //
+            // We have to re-map the components to the coordinate system our Earth object is currently in.
+
+            dxo = v.y;
+            dyo = v.z;
+            dzo = v.x;
+        }
+
+        var bolideEndX = bolideMinDistance * dx;
+        var bolideEndY = bolideMinDistance * dy;
+        var bolideEndZ = bolideMinDistance * dz;
 
         scene.add(bolide);
 
         onRenderFcts.push(function callback(delta, now) {
-            bolideRadius -= delta / 100;
+            bolideTime -= delta;
 
-            if (bolideRadius < 0.51 || !bolideObjects[index]) {
+            bolideTime = Math.max(0, bolideTime);
+
+            bolide.position.x = bolideEndX - bolideTime * dxo;
+            bolide.position.y = bolideEndY - bolideTime * dyo;
+            bolide.position.z = bolideEndZ - bolideTime * dzo;
+
+            if (bolideTime <= 0 || !bolideObjects[index]) {
                 onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
                 return;
             }
-
-            bolide.position.x = bolideRadius * dx;
-            bolide.position.y = bolideRadius * dy;
-            bolide.position.z = bolideRadius * dz;
         })
 
         bolideObjects[index] = bolide;
@@ -658,9 +682,15 @@ require(['threex.planets/package.require.js'
     // other
 
     /*
-    scene.add( new THREE.Mesh( new THREE.CubeGeometry(5, 0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0x0000FF }) ) );
-    scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 5, 0.01), new THREE.MeshBasicMaterial({ color: 0x00FF00 }) ) );
-    scene.add( new THREE.Mesh( new THREE.CubeGeometry(0.01, 0.01, 5), new THREE.MeshBasicMaterial({ color: 0xFF0000 }) ) );
+    var x = new THREE.Mesh(new THREE.CubeGeometry(5, 0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0xFF0000 }));
+    x.position.x = 2.5;
+    var y = new THREE.Mesh(new THREE.CubeGeometry(0.01, 5, 0.01), new THREE.MeshBasicMaterial({ color: 0x00FF00 }));
+    y.position.y = 2.5;
+    var z = new THREE.Mesh(new THREE.CubeGeometry(0.01, 0.01, 5), new THREE.MeshBasicMaterial({ color: 0x0000FF }));
+    z.position.z = 2.5;
+    scene.add(x);
+    scene.add(y);
+    scene.add(z);
     */
 
     THREEx.WindowResize(renderer, camera);
@@ -668,8 +698,12 @@ require(['threex.planets/package.require.js'
     // CONTROLS
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.minDistance = 0.65;
-    controls.maxDistance = 2;
+    controls.maxDistance = 5.5;
     controls.noPan = true;
+    controls.rotateSpeed = 0.52;
+    controls.targetRadius = 0.5;
+    controls.autoRotateSpeed = 0.25;
+    controls.rotateLeft(-1);
     controls.autoRotate = true;
 
     function parseJsonDate(jsonDateString) {
@@ -713,8 +747,9 @@ require(['threex.planets/package.require.js'
         var DateEnd = new Date(2015, 11, 31);
         var animate = function () {
             if (temp < DateEnd && !stopAnimation) {
-                temp = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate() + 4);
-                $("#element").dateRangeSlider("values", StartDateMin, temp);
+                tempStart = new Date(temp.getFullYear() - 1, temp.getMonth(), temp.getDate());
+                temp = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate() + 8);
+                $("#element").dateRangeSlider("values", tempStart, temp);
                 window.setTimeout(animate, 100);
             }
             else

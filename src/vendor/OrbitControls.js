@@ -41,6 +41,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 	this.minDistance = 0;
 	this.maxDistance = Infinity;
 
+    // The radius of the target object - used for calculating mouse rotation speed
+	this.targetRadius = 0;
+
 	// Limits to how far you can zoom in and out ( OrthographicCamera only )
 	this.minZoom = 0;
 	this.maxZoom = Infinity;
@@ -306,6 +309,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 		// restrict radius to be between desired limits
 		radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
 
+	    // store the radius for rotation speed compensation
+		scope.radius = radius;
+
 		// move target to panned location
 		this.target.add( pan );
 
@@ -433,10 +439,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 			rotateDelta.subVectors( rotateEnd, rotateStart );
 
 			// rotating across whole screen goes 360 degrees around
-			scope.rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed );
+			scope.rotateLeft(2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed * (scope.radius - scope.targetRadius));
 
 			// rotating up and down along whole screen attempts to go 360, but limited to 180
-			scope.rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed );
+			scope.rotateUp(1 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed * (scope.radius - scope.targetRadius));
 
 			rotateStart.copy( rotateEnd );
 
@@ -627,9 +633,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 				rotateDelta.subVectors( rotateEnd, rotateStart );
 
 				// rotating across whole screen goes 360 degrees around
-				scope.rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed );
+				scope.rotateLeft(2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed * (scope.radius - scope.targetRadius));
 				// rotating up and down along whole screen attempts to go 360, but limited to 180
-				scope.rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed );
+				scope.rotateUp(1 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed * (scope.radius - scope.targetRadius));
 
 				rotateStart.copy( rotateEnd );
 
