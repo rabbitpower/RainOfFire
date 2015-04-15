@@ -204,6 +204,8 @@ require(['threex.planets/package.require.js'
     $("#element").bind("valuesChanged", function (e, data) {
         DateMin = data.values.min;
         DateMax = data.values.max;
+        $("#selectable").empty();
+        populateABlist();
         getJSonData();
     });
 
