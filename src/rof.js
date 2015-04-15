@@ -2,6 +2,7 @@ require(['threex.planets/package.require.js'
 ], function () {
 
     var container = $("#rofpanel").get(0);
+    var selectedIndex;
     $("#table-data").hide();
     if (Detector.webgl)
         renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -175,20 +176,61 @@ require(['threex.planets/package.require.js'
         });
     }
 
+    function apparentMagnitude(Joules, d) {
+        var f_bolid = Joules / (4 * 3.14 * (d * d));
+        var f_vega = 2.775764 / 100000000;
+        var app_mag = -2.5 * log10(f_bolid / f_vega);
+        return app_mag;
+    }
 
 
-    function setNextItem(newItem) {
-        return $('<li>' + newItem + '</li>');
+    function infoPanel(index){
+        var rad_en = bolides[index].RadiatedEnergy;
+        var distance = bolides[index].Altitude;
+        var app_mag = apparentMagnitude(rad_en,distance*1000 );
+        $("#datetime").text(bolides[index].Date);
+        $("#latitude").text(bolides[index].Latitude);
+        $("#longtitude").text(bolides[index].Longitude);
+        $("#altitude").text(distance);
+        $("#velocity").text(bolides[index].Velocity);
+        $("#vx").text(bolides[index].vx);
+        $("#vy").text(bolides[index].vy);
+        $("#vz").text(bolides[index].vz);
+        $("#raden").text(rad_en);
+        $("#imen").text(bolides[index].ImpactEnergy);
+        if (distance != null) {
+            $("#appMag").text(app_mag);
+        }
+        else {
+            $("#appMag").text("");
+        }
+        $("#table-data").show();
+    }
+
+    var idlist = [];
+    $("#selectable").selectable({
+        selected: function (event, ui) {
+            idlist = [];
+            idlist.push(ui.selected.id);
+            for (var i = 0; i < idlist.length; i++) {
+                selectedIndex = idlist[0];
+                infoPanel(idlist[0]);
+                SelectionUpdate();
+            }
+        }
+    });
+
+    function setNextItem(newItem, id) {
+        return $('<li id="' + id + '">' + newItem + '</li>');
     }
 
     function populateABlist() {
-        var newItem;
+
         for (var i = 0; i < bolideListData.length; i++) {
-            newItem = bolideListData[i].Date;
-            setNextItem(newItem)
+         
+            setNextItem(bolideListData[i].Date, bolideListData[i].id)
                  .addClass("ui-widget-content")
                  .appendTo("#selectable");
-
         }
     };
 
@@ -434,15 +476,9 @@ require(['threex.planets/package.require.js'
         return Math.log(val) / Math.LN10;
     }
 
-    function apparentMagnitude(Joules, d) {
-        var f_bolid = Joules / (4 * 3.14 * (d * d));
-        var f_vega = 2.775764 / 100000000;
-        var app_mag = -2.5 * log10(f_bolid / f_vega);
-        return app_mag;
-    }
 
 
-    var selectedIndex;
+
     function SelectionUpdate() {
         if (selectedIndex == null) return;
         var p, v, percX, percY, left, top;
@@ -478,26 +514,8 @@ require(['threex.planets/package.require.js'
 
             for (var i = 0; i < intersects.length; i++) {
                 //alert(intersects[i].object);
-                var rad_en = bolides[intersects[i].object.name].RadiatedEnergy;
-                var distance = bolides[intersects[i].object.name].Altitude;
-                var app_mag = apparentMagnitude(rad_en,distance*1000 );
-                $("#datetime").text(bolides[intersects[i].object.name].Date);
-                $("#latitude").text(bolides[intersects[i].object.name].Latitude);
-                $("#longtitude").text(bolides[intersects[i].object.name].Longitude);
-                $("#altitude").text(distance);
-                $("#velocity").text(bolides[intersects[i].object.name].Velocity);
-                $("#vx").text(bolides[intersects[i].object.name].vx);
-                $("#vy").text(bolides[intersects[i].object.name].vy);
-                $("#vz").text(bolides[intersects[i].object.name].vz);
-                $("#raden").text(rad_en);
-                $("#imen").text(bolides[intersects[i].object.name].ImpactEnergy);
-                if (distance != null) {
-                    $("#appMag").text(app_mag);
-                }
-                else {
-                    $("#appMag").text("");
-                }
-                $("#table-data").show();
+                /////////////////////////////////////////////////////////////////////////////////
+                infoPanel(i);
                 selectedIndex = intersects[i].object.name;
                 SelectionUpdate();
                 break;
@@ -895,6 +913,7 @@ require(['threex.planets/package.require.js'
 
         for (var i = 0; i < data.length; i++) {
             bolides.push(data[i]);
+            data[i].id = i;
             if (RadiatedEnergyMax < data[i].RadiatedEnergy) {
                 RadiatedEnergyMax = data[i].RadiatedEnergy;
             }
