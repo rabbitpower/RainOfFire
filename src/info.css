@@ -31,8 +31,8 @@
 }
 
 /* hide the default "x" close image */
-.ui-dialog-titlebar-close span 
-{  display:none !important;  }
+/*.ui-dialog-titlebar-close span 
+{  display:none !important;*/  }
 
 /* translucent background */
 .ui-dialog 
