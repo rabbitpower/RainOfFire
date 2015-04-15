@@ -175,9 +175,28 @@ require(['threex.planets/package.require.js'
         });
     }
 
+
+
+    function setNextItem(newItem) {
+        return $('<li>' + newItem + '</li>');
+    }
+
+    function populateABlist() {
+        var newItem;
+        for (var i = 0; i < bolideListData.length; i++) {
+            newItem = bolideListData[i].Date;
+            setNextItem(newItem)
+                 .addClass("ui-widget-content")
+                 .appendTo("#selectable");
+
+        }
+    };
+
     $("#element").bind("valuesChanging", function (e, data) {
         DateMin = data.values.min;
         DateMax = data.values.max;
+        $("#selectable").empty();
+        populateABlist();
         stopAnimation = true;
         getJSonData();
     });
@@ -824,8 +843,10 @@ require(['threex.planets/package.require.js'
     }
 
 
-
+    var bolideListData = [];
     function getJSonData() {
+        bolideListData = [];
+        var j = 0;
         for (var i = 0; i < bolides.length; i++) {
             var visible = false;
             if (new Date(bolides[i].Date).valueOf() >= DateMin.valueOf() && new Date(bolides[i].Date).valueOf() <= DateMax.valueOf()) {
@@ -834,6 +855,8 @@ require(['threex.planets/package.require.js'
 
                     if ( !bolides[i].ImpactEnergy || (bolides[i].ImpactEnergy >= SelectedImpactEnergyMin && bolides[i].ImpactEnergy <= SelectedImpactEnergyMax) ) {
                         if (!bolides[i].Altitude || (bolides[i].Altitude >= SelAltitudeMin && bolides[i].Altitude <= SelAltitudeMax)) {
+                            bolideListData[j] = bolides[i];
+                            j++;
                             addBolide(i, bolides[i]);
                             visible = true;
                         }
@@ -905,24 +928,8 @@ require(['threex.planets/package.require.js'
             //
         }
 
-        function setNextItem(newItem) {
-            return $('<li>' + newItem + '</li>');
-        }
 
-        function populateABlist() {
-            var newItem;
-            for(var i =0; i< bolides.length;i++)
-            {
-                newItem = bolides[i].Date;
-               setNextItem(newItem)
-                    .addClass("ui-widget-content")
-                    .appendTo("#selectable");
-              
-            }
-        };
-
-
-        populateABlist();
+      //  populateABlist();
         RESlider();
         IESlider();
         AltSlider();
