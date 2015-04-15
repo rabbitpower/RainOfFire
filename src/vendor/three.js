@@ -7416,7 +7416,9 @@ THREE.EventDispatcher.prototype = {
 
 			for ( var i = 0, l = objects.length; i < l; i ++ ) {
 
-				intersectObject( objects[ i ], this, intersects, recursive );
+			    if (objects[i]) {
+			        intersectObject(objects[i], this, intersects, recursive);
+			    }
 
 			}
 

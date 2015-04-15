@@ -1,6 +1,8 @@
 require(['threex.planets/package.require.js'
 ], function () {
 
+    var container = $("#rofpanel").get(0);
+    $("#table-data").hide();
     if (Detector.webgl)
         renderer = new THREE.WebGLRenderer({ antialias: true });
     else
@@ -26,6 +28,10 @@ require(['threex.planets/package.require.js'
     var stopAnimation = false;
 
     StartDateMin = new Date(2009, 0, 1);
+
+    $("#info-panel").tabs({
+        active:0
+    })
 
     $("#element").dateRangeSlider({
 
@@ -200,12 +206,12 @@ require(['threex.planets/package.require.js'
         getJSonData();
     });
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
 
     var onRenderFcts = [];
     var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+    var camera = new THREE.PerspectiveCamera(45, renderer.domElement.width / renderer.domElement.height, 0.01, 1000);
     camera.position.x = 0.5369996722951439;
     camera.position.y = 1.1648934719530957;
     camera.position.z = 1.1496685032579688;
@@ -275,7 +281,7 @@ require(['threex.planets/package.require.js'
     //////////////////////////////////////////////////////////////////////////////////
     //      Camera Controls                         //
     //////////////////////////////////////////////////////////////////////////////////
-    //var projector = new THREE.Projector();
+    var projector = new THREE.Projector();
     //var ray = new THREE.Raycaster(camera.position, null);
 
     //var mouse = { x: 0, y: 0 }
@@ -376,7 +382,7 @@ require(['threex.planets/package.require.js'
         //}
 
         //updateHash();
-        interact();
+        interact(event);
         render();
 
     }
@@ -401,7 +407,107 @@ require(['threex.planets/package.require.js'
 
     //document.addEventListener('mousewheel', onDocumentMouseWheel, false);
 
-    function interact() {
+    var $trackingOverlay = $('#tracking-overlay');
+
+    function log10(val) {
+        return Math.log(val) / Math.LN10;
+    }
+
+    function apparentMagnitude(Joules, d) {
+        var f_bolid = Joules / (4 * 3.14 * (d * d));
+        var f_vega = 2.775764 / 100000000;
+        var app_mag = -2.5 * log10(f_bolid / f_vega);
+        return app_mag;
+    }
+
+
+    var selectedIndex;
+    function SelectionUpdate() {
+        if (selectedIndex == null) return;
+        var p, v, percX, percY, left, top;
+        v = bolideObjects[selectedIndex].position.clone();
+        v.project(camera);
+        percX = (v.x + 1) / 2;
+        percY = (-v.y + 1) / 2;
+        left = percX * renderer.domElement.width;
+        top = percY * renderer.domElement.height;
+        $trackingOverlay
+            .css('left', (left - $trackingOverlay.width() / 2) + 'px')
+            .css('top', (top - $trackingOverlay.height() / 2) + 'px');
+    }
+
+    function interact(event) {
+
+
+        var raycaster = new THREE.Raycaster();
+        var mouse = new THREE.Vector2();
+
+        //function onMouseClick(event) {
+
+            // calculate mouse position in normalized device coordinates
+            // (-1 to +1) for both components
+
+        mouse.x = (event.clientX / renderer.domElement.width) * 2 - 1;
+        mouse.y = -(event.clientY / renderer.domElement.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            // calculate objects intersecting the picking ray
+            var intersects = raycaster.intersectObjects(bolideObjects, true);
+
+
+            for (var i = 0; i < intersects.length; i++) {
+                //alert(intersects[i].object);
+                var rad_en = bolides[intersects[i].object.name].RadiatedEnergy;
+                var distance = bolides[intersects[i].object.name].Altitude;
+                var app_mag = apparentMagnitude(rad_en,distance*1000 );
+                $("#datetime").text(bolides[intersects[i].object.name].Date);
+                $("#latitude").text(bolides[intersects[i].object.name].Latitude);
+                $("#longtitude").text(bolides[intersects[i].object.name].Longitude);
+                $("#altitude").text(distance);
+                $("#velocity").text(bolides[intersects[i].object.name].Velocity);
+                $("#vx").text(bolides[intersects[i].object.name].vx);
+                $("#vy").text(bolides[intersects[i].object.name].vy);
+                $("#vz").text(bolides[intersects[i].object.name].vz);
+                $("#raden").text(rad_en);
+                $("#imen").text(bolides[intersects[i].object.name].ImpactEnergy);
+                if (distance != null) {
+                    $("#appMag").text(app_mag);
+                }
+                else {
+                    $("#appMag").text("");
+                }
+                $("#table-data").show();
+                selectedIndex = intersects[i].object.name;
+                SelectionUpdate();
+                break;
+
+            }
+
+        //}
+
+        function render() {
+
+            // update the picking ray with the camera and mouse position	
+            raycaster.setFromCamera(mouse, camera);
+
+            // calculate objects intersecting the picking ray
+            var intersects = raycaster.intersectObjects(bolideObjects, true);
+            
+           
+            for (var i = 0; i < intersects.length; i++) {
+                alert(intersects[i].object);
+                //intersects[i].object.material.color.set(0xff0000);
+
+            }
+            
+           // renderer.render(scene, camera);
+
+        }
+
+        //window.addEventListener('mouseclick', onMouseClick, false);
+
+        //window.requestAnimationFrame(render);
+
         //console.log(camera.position.x);
         //console.log(camera.position.y);
         //console.log(camera.position.z);
@@ -577,6 +683,7 @@ require(['threex.planets/package.require.js'
 
         var bolideGeometry = new THREE.SphereGeometry(bolideSize, 16, 16);
         var bolideMesh = new THREE.Mesh(bolideGeometry, customMaterial);
+        //var bolideMesh = new THREE.Mesh(bolideGeometry, material);
 
         onRenderFcts.push(function callback(delta, now) {
             if (!bolideObjects[index]) {
@@ -655,8 +762,9 @@ require(['threex.planets/package.require.js'
                 return;
             }
         })
-
+        bolide.name = index;
         bolideObjects[index] = bolide;
+
 
         //for( var i = 0; i < 10; i++ ) {
 
@@ -693,7 +801,10 @@ require(['threex.planets/package.require.js'
     scene.add(z);
     */
 
-    THREEx.WindowResize(renderer, camera);
+    $(document).ready(function () {
+        THREEx.WindowResize(renderer, camera);
+    });
+
     THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
     // CONTROLS
     controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -705,6 +816,8 @@ require(['threex.planets/package.require.js'
     controls.autoRotateSpeed = 0.25;
     controls.rotateLeft(-1);
     controls.autoRotate = true;
+    controls.addEventListener('change', SelectionUpdate);
+
 
     function parseJsonDate(jsonDateString) {
         return new Date(parseInt(jsonDateString.replace('/Date(', '')));
@@ -713,14 +826,8 @@ require(['threex.planets/package.require.js'
 
 
     function getJSonData() {
-        //for (var i = 0; i < bolideObjects.length; i++) {
-        //    scene.remove(bolideObjects[i]);
-        //}
-        //bolideObjects = [];
-
         for (var i = 0; i < bolides.length; i++) {
             var visible = false;
-
             if (new Date(bolides[i].Date).valueOf() >= DateMin.valueOf() && new Date(bolides[i].Date).valueOf() <= DateMax.valueOf()) {
 
                 if (!bolides[i].RadiatedEnergy || ( log10(bolides[i].RadiatedEnergy) >= SelectedEnergyMin && log10(bolides[i].RadiatedEnergy) <= SelectedEnergyMax) ) {
@@ -739,7 +846,6 @@ require(['threex.planets/package.require.js'
                 bolideObjects[i] = null;
             }
         }
-        //render();
     }
 
     function StartAnimation() {
@@ -798,6 +904,25 @@ require(['threex.planets/package.require.js'
 
             //
         }
+
+        function setNextItem(newItem) {
+            return $('<li>' + newItem + '</li>');
+        }
+
+        function populateABlist() {
+            var newItem;
+            for(var i =0; i< bolides.length;i++)
+            {
+                newItem = bolides[i].Date;
+               setNextItem(newItem)
+                    .addClass("ui-widget-content")
+                    .appendTo("#selectable");
+              
+            }
+        };
+
+
+        populateABlist();
         RESlider();
         IESlider();
         AltSlider();
