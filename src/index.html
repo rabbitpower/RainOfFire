@@ -110,14 +110,16 @@ void main()
     <div id="info-panel">       
             <ul>
                 <li><a href="#fragment-1">AirBurst</a></li>
-                <li><a href="#fragment-2">NEO</a></li>
-                <li><a href="#fragment-3">FireBalls</a></li>
+                <li><a href="#fragment-2">Meteorites</a></li>
+                <li><a href="#fragment-3">NEC</a></li>
+                
             </ul>
             <div id="fragment-1">
                 <div class="scrollbar-inner">
                     <ol id="selectable"></ol>
                     <script>
                         $(function () {
+                            
                             $("#selectable").selectable({
                                 appendTo: "#someElem"
                             })
@@ -127,7 +129,25 @@ void main()
                         });
                     </script>
                 </div>
+                </div>
+            <div id="fragment-2">
+                <div class="scrollbar-inner">
+                    <ol id="selectable2"></ol>
+                    <script>
+                        $(function () {
+                           
+                            $("#selectable2").selectable({
+                                appendTo: "#someElem2"
+                            })
+                        });
+                        $(document).ready(function () {
+                            $(".scrollbar-inner").scrollbar();
+                        });
+                    </script>
+                </div>
             </div>
+
+
 
         </div>
 	<div id="element" style="position: absolute; 
