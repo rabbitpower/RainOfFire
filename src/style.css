@@ -68,12 +68,13 @@ h1 {
 #property-table{
 }
 #table-data, #table-data-mete{
-    color:white;
-    background-color: rgba(56, 56, 56, 0.90);
+    color: rgb(213, 213, 213);
+    background-color: rgba(53, 57, 63, 0.76);
     font-size:12px;
-    border-radius: 10px;
-    border:1px solid;
-    border-color:rgba(255, 255, 255, .5);
+    /* border-radius: 10px; */
+    /* border:1px solid; */
+    /* border-color:rgba(255, 255, 255, .5); */
+    font-family: monospace;
 }
 
 .td{
@@ -104,15 +105,15 @@ h1 {
 	height:5px;
 }
 ::-webkit-scrollbar-track {
-	background:#eee;
-	border: thin solid lightgray;
-	box-shadow: 0px 0px 3px #dfdfdf inset;
-	border-radius:10px;
+	background: #FFF;
+	/* border: thin solid lightgray; */
+	/* box-shadow: 0px 0px 3px #dfdfdf inset; */
+	/* border-radius:10px; */
 }
 ::-webkit-scrollbar-thumb {
-	background:#999;
-	border: thin solid gray;
-	border-radius:10px;
+	background: #C5C5C5;
+	/* border: thin solid gray; */
+	/* border-radius:10px; */
 }
 ::-webkit-scrollbar-thumb:hover {
 	background:#7d7d7d;
