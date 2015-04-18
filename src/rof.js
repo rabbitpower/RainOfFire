@@ -61,6 +61,7 @@ require(['threex.planets/package.require.js'
     $("#element").dateRangeSlider({
 
         bounds: { min: StartDateMin, max: new Date(2015, 11, 31) },
+
         defaultValues: { min: StartDateMin, max: StartDateMin },
         scales: [{
             first: function (value) {
@@ -82,11 +83,11 @@ require(['threex.planets/package.require.js'
         }],
 
 
-        arrows: false,
+        arrows: true,
         valueLabels: "change",
         durationIn: 500,
         durationOut: 2000,
-        // symmetricPositionning: true,
+        symmetricPositionning: true,
         range: { min: 0 },
         wheelMode: "zoom"
     });
@@ -792,7 +793,8 @@ require(['threex.planets/package.require.js'
             }
             var circleGeometry = new THREE.CircleGeometry(radius, segments);
             var circle = new THREE.Mesh(circleGeometry, material);
-            circle.position.z = 0.51;// + ((radius - minr) / (maxr - minr)) * (0.53 - 0.51) //0.51;
+
+            circle.position.z = 0.51 + (1 - (radius - 0.0004) / (0.0222 - 0.0004)) * (0.52 - 0.51); //0.51;
             
             var m = new THREE.Matrix4();
             var n = new THREE.Matrix4();
@@ -1130,6 +1132,8 @@ require(['threex.planets/package.require.js'
 
 
     $.getJSON("data/meteorites.json", function (data) {
+        var minr, maxr;
+       
         for (var i = 0; i < data.length; i++) {
             meteorites.push(data[i]);
         }

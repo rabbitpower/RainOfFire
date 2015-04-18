@@ -416,5 +416,6 @@ var MeteoriteClasses = {
     'Ureilite': 'Achondrites',
     'Ureilite-an': 'Achondrites',
     'Ureilite-pmict': 'Achondrites',
-    'Winonaite': 'Achondrites'
+    'Winonaite': 'Achondrites',
+    'Unknown' : 'Unknown'
 };
