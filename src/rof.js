@@ -1,12 +1,23 @@
 require(['threex.planets/package.require.js'
 ], function () {
 
+    var AU = 1;
+
+    var earthDiameter = 12742; // km
+    
+    var earthSystemScale = AU * earthDiameter / 149597871; // 0.000085175009111944 * AU;
+
+    var moonScale = 1 * 3474 / earthDiameter;
+
+    var kilometerScale = 1 / earthDiameter; // 6.6845813446703832938943033997781e-9 
+
+
     var container = $("#rofpanel").get(0);
     var selectedIndex;
     $("#table-data").hide();
     $("#table-data-mete").hide();
     if (Detector.webgl)
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: false });
     else
         renderer = new THREE.CanvasRenderer();
 
@@ -329,16 +340,13 @@ require(['threex.planets/package.require.js'
 
     var onRenderFcts = [];
     var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(45, renderer.domElement.width / renderer.domElement.height, 0.01, 1000);
-    camera.position.x = 0.5369996722951439;
-    camera.position.y = 1.1648934719530957;
-    camera.position.z = 1.1496685032579688;
+    var camera = new THREE.PerspectiveCamera(45, renderer.domElement.width / renderer.domElement.height, earthSystemScale * 0.1, 20000);
+    camera.up.set(0, 0, 1);
+    camera.position.x = 0.5369996722951439 * earthSystemScale;
+    camera.position.y = 1.1648934719530957 * earthSystemScale;
+    camera.position.z = 1.1496685032579688 * earthSystemScale;
 
     var light = new THREE.AmbientLight(0x888888)
-    scene.add(light)
-
-    var light = new THREE.DirectionalLight(0xcccccc, 1)
-    light.position.set(5, 3, 5)
     scene.add(light)
 
     /////////////
@@ -356,43 +364,269 @@ require(['threex.planets/package.require.js'
         var map = THREE.ImageUtils.loadTexture('images/earthmap8k.jpg');
 
         //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
-        var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k_optimized.jpg');
+        var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k_optimized2.jpg');
 
-        var material = new THREE.MeshPhongMaterial({
+        var material = new THREE.MeshLambertMaterial({
             map: map,
             //bumpMap       : bumpMap,
             bumpScale: 0.05,
             specularMap: specularMap,
             specular: new THREE.Color('grey'),
+            //side: THREE.DoubleSide
         })
 
-        var mesh = new THREE.Mesh(geometry, material)
-        mesh.rotation.y = -Math.PI / 2;
+        var mesh = new THREE.Mesh(geometry, material);
+        mesh.receiveShadow = true;
+        mesh.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+
         return mesh
     }
 
+    var earthSystemEcliptic = new THREE.Group();
+
+    // inside the ecliptic system we have the earth and 'on'-earth objects tilted and rotating along the earth's axis
+    var earthSystemGeographic = new THREE.Group();
+
+    earthSystemEcliptic.add(earthSystemGeographic);
+
     var earthMesh = createEarth();
-    scene.add(earthMesh);
 
-    var center = new THREE.Vector3(0, 0, 0);
+    earthSystemGeographic.add(earthMesh);
 
-    //onRenderFcts.push(function (delta, now) {
-    //    camera.lookAt(center);
-    //});
+    //var earthSystem2 = new THREE.Group();
+    //earthSystem2.add(createEarth());
 
     var cloudMesh = THREEx.Planets.createEarthCloud()
-    scene.add(cloudMesh)
+    cloudMesh.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+
+    earthSystemGeographic.add(cloudMesh)
 
     onRenderFcts.push(function (delta, now) {
         cloudMesh.rotateY(1 / 16 * delta)
     })
 
+    var moonMesh = THREEx.Planets.createMoon();
+
+    moonMesh.castShadow = true;
+    moonMesh.scale.set(moonScale, moonScale, moonScale);
+    moonMesh.position.x = 1;
+
+    earthSystemEcliptic.add(moonMesh);
+
+    // in the solar system:
+    var solarSystem = new THREE.Group();
+
+    renderer.shadowMapEnabled = true;
+    renderer.shadowMapSoft = false;
+
+    renderer.shadowCameraNear = camera.near;
+    renderer.shadowCameraFar = camera.far;
+    renderer.shadowCameraFov = 45;
+
+    var light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(0, 0, 0);
+    light.castShadow = true;
+    light.shadowDarkness = 1;
+
+    solarSystem.add(light)
+
+    function toJED(d) {
+        var timeStamp = d.getTime();
+        //return timeStamp / (1000 * 60 * 60 * 24) + 2440587.5;
+        return timeStamp / (1000 * 60 * 60 * 24) + 2440587.5;
+    }
+
+
+    var jed = toJED(new Date());
+
+    var mercury = new Orbit3D(Ephemeris.mercury,
+    {
+        color: 0x913CEE, width: 1, jed: jed,
+        display_color: new THREE.Color(0x913CEE),
+        name: 'Mercury'
+    });
+    solarSystem.add(mercury.getEllipse());
+    var venus = new Orbit3D(Ephemeris.venus,
+        {
+            color: 0xFF7733, width: 1, jed: jed,
+            display_color: new THREE.Color(0xFF7733),
+            name: 'Venus'
+        });
+    solarSystem.add(venus.getEllipse());
+    var earth = new Orbit3D(Ephemeris.earth,
+        {
+            color: 0x009ACD, width: 1, jed: jed,
+            display_color: new THREE.Color(0x009ACD),
+            name: 'Earth'
+        });
+    solarSystem.add(earth.getEllipse());
+    var mars = new Orbit3D(Ephemeris.mars,
+        {
+            color: 0xA63A3A, width: 1, jed: jed,
+            display_color: new THREE.Color(0xA63A3A),
+            name: 'Mars'
+        });
+    solarSystem.add(mars.getEllipse());
+    var jupiter = new Orbit3D(Ephemeris.jupiter,
+        {
+            color: 0xFF7F50, width: 1, jed: jed,
+            display_color: new THREE.Color(0xFF7F50),
+            name: 'Jupiter'
+        });
+    solarSystem.add(jupiter.getEllipse());
+
+    planets = [mercury, venus, earth, mars, jupiter];
+
+    var texture = THREE.ImageUtils.loadTexture('images/sunsprite.png');
+    var sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: texture,
+        blending: THREE.AdditiveBlending,
+        useScreenCoordinates: false,
+        color: 0xffffff
+    }));
+    sprite.scale.x = 1;
+    sprite.scale.y = 1;
+    sprite.scale.z = 1;
+    solarSystem.add(sprite);
+
+    scene.add(solarSystem);
+
+    var toTheSun = new THREE.Mesh(new THREE.CubeGeometry(3000, 0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0xFF0000, side: THREE.DoubleSide }));
+    toTheSun.scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
+    toTheSun.updateMatrix();
+    var toTheSunMatrix = new THREE.Matrix4().copy(toTheSun.matrix);
+    //scene.add(toTheSun);
+
+    var start = new Date().getTime();
+
+    function updateEarthSystem() {
+        // TODO: Set earth's tilted axis and position
+        //if (!stopAnimation) {
+        //    jed = toJED($("#element").dateRangeSlider("values").max);
+        //}
+        //else {
+        //jed = 2451545 - 10; //0.25;// toJED(new Date());
+
+        var date = new Date(); //$("#element").dateRangeSlider("values").max;// new Date();
+
+        //var date = new Date(2015, 2, 20, 10, 41);
+
+        jed = toJED(date);// + (new Date().getTime() - start) * 100 / (1000 * 60 * 60 * 24);
+        //}
+
+        var matrix = new THREE.Matrix4();
+
+        var epos = earth.getPosAtTime(jed);
+
+        matrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
+
+        matrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
+
+        earthSystemEcliptic.matrix = new THREE.Matrix4();
+        earthSystemEcliptic.applyMatrix(matrix);
+
+        var matrix = new THREE.Matrix4();
+
+        var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
+
+        var partOfTheDay = jed % rotationSpeed - 1/12;
+        var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
+        var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
+
+        // 4rd: rotate the earth to be facing the sun properly
+        //matrix.multiply(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
+
+        // 2nd: tilt the earth
+        matrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
+
+        // 1st: rotate along the Z axis so we're facing the sun with the proper side
+        matrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
+
+        earthSystemGeographic.matrix = new THREE.Matrix4();
+        earthSystemGeographic.applyMatrix(matrix);
+
+        /* The second Earth: */
+        /*
+        {
+            var matrix = new THREE.Matrix4();
+
+            var j2d = Astronomy.DayValue(date);// + (new Date().getTime() - start) * 1000000 / (1000 * 60 * 60 * 24);
+            var epos2 = Astronomy.Earth.EclipticCartesianCoordinates(j2d);
+
+            matrix.multiply(new THREE.Matrix4().makeTranslation(epos2.x, epos2.y, epos2.z));
+
+            matrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
+
+            // 4rd: rotate the earth to be facing the sun properly
+            matrix.multiply(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
+
+            // 3rd: tilt the earth
+            matrix.multiply(new THREE.Matrix4().makeRotationY(-Yangle));
+
+            // 2nd: rotate along the Z axis so we're facing the sun with the proper side
+            matrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
+
+            // 1st: get the earth straight
+            matrix.multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+
+            earthSystem2.matrix = new THREE.Matrix4();
+            earthSystem2.applyMatrix(matrix);
+        }
+        */
+        /* ---------------- */
+
+        /* The Moon: */
+        {
+            var matrix = new THREE.Matrix4();
+
+            var j2d = Astronomy.DayValue(date);// + (new Date().getTime() - start) * 100 / (1000 * 60 * 60 * 24);
+            var epos2 = Astronomy.Moon.GeocentricCoordinates(j2d);
+
+            //matrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
+            matrix.multiply(new THREE.Matrix4().makeTranslation(epos2.x / earthSystemScale, epos2.y / earthSystemScale, 0* epos2.z / earthSystemScale));
+
+            matrix.multiply(new THREE.Matrix4().makeScale(moonScale, moonScale, moonScale));
+
+            moonMesh.matrix = new THREE.Matrix4();
+            moonMesh.applyMatrix(matrix);
+        }
+        /* ---------------- */
+
+        //var deltaPos = new THREE.Vector3().copy(camera.position);
+        //deltaPos.sub(earthSystem.position);
+
+        solarSystem.matrix = new THREE.Matrix4();
+
+        solarSystem.applyMatrix(new THREE.Matrix4().makeTranslation(-epos[0], -epos[1], -epos[2]));
+        //solarSystem.applyMatrix(new THREE.Matrix4().makeTranslation(-epos.x, -epos.y, -epos.z));
+
+        //deltaPos.add(earthSystem.position);
+
+        //camera.position.copy(deltaPos);
+
+        //camera.lookAt(earthSystem.position);
+        //earthSystem.matrixWorldNeedsUpdate = true;
+
+
+        var pos = new THREE.Vector3(epos[0], epos[1], epos[2]);
+        //var pos = new THREE.Vector3(epos.x, epos.y, epos.z);
+        var angle = pos.angleTo(new THREE.Vector3(0, 1, 0));
+
+        toTheSun.matrix.copy(toTheSunMatrix);
+        toTheSun.applyMatrix(new THREE.Matrix4().makeRotationZ(angle - Math.PI / 2));
+    }
+
+    updateEarthSystem();
+
+    //scene.add(earthSystem);
+    solarSystem.add(earthSystemEcliptic);
+    //solarSystem.add(earthSystem2);
 
     //////////////////////////////////////////////////////////////////////////////////
     //      add star field                          //
     //////////////////////////////////////////////////////////////////////////////////
 
-    var geometry = new THREE.SphereGeometry(90, 32, 32)
+    var geometry = new THREE.SphereGeometry(10000, 64, 32)
     var material = new THREE.MeshBasicMaterial()
     material.map = THREE.ImageUtils.loadTexture('threex.planets/images/galaxy_starfield.png')
     material.side = THREE.BackSide
@@ -687,24 +921,27 @@ require(['threex.planets/package.require.js'
 
     //}
 
-    function animate() {
-        requestAnimationFrame(animate);
-        render();
-        update();
-    }
+    //function animate() {
+    //    requestAnimationFrame(animate);
+    //    render();
+    //    update();
+    //}
 
-    function update() {
-        if (keyboard.pressed("z")) {
-            // do something
-        }
-        var delta = clock.getDelta();
-        //customUniforms.time.value += delta;
-        controls.update();
-    }
+    //function update() {
+    //    if (keyboard.pressed("z")) {
+    //        // do something
+    //    }
+    //    var delta = clock.getDelta();
+    //    //customUniforms.time.value += delta;
+    //    controls.update();
+    //}
 
     function render() {
-        renderer.render(scene, camera);
+
+        updateEarthSystem();
         controls.update();
+
+        renderer.render(scene, camera);
         //controls.rotateUp(-0.0002);
     }
 
@@ -794,12 +1031,13 @@ require(['threex.planets/package.require.js'
             var circleGeometry = new THREE.CircleGeometry(radius, segments);
             var circle = new THREE.Mesh(circleGeometry, material);
 
-            circle.position.z = 0.51 + (1 - (radius - 0.0004) / (0.0222 - 0.0004)) * (0.52 - 0.51); //0.51;
+            circle.rotation.y = Math.PI / 2;
+            circle.position.x = 0.51 + (1 - (radius - 0.0004) / (0.0222 - 0.0004)) * (0.52 - 0.51); //0.51;
             
             var m = new THREE.Matrix4();
             var n = new THREE.Matrix4();
-            m.makeRotationX((-meteorites[i].reclat / 180) * Math.PI);
-            n.makeRotationY((meteorites[i].reclong / 180) * Math.PI);
+            m.makeRotationY((-meteorites[i].reclat / 180) * Math.PI);
+            n.makeRotationZ((meteorites[i].reclong / 180) * Math.PI);
             //m.multiply(n);
             n.multiply(m);
             circle.updateMatrix();
@@ -835,12 +1073,12 @@ require(['threex.planets/package.require.js'
             //scene.add(circle);
 
         }
-        scene.add(new THREE.Mesh(circlesCh, Chmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesCh, Chmat));
         
-        scene.add(new THREE.Mesh(circlesIr, Irmat));
-        scene.add(new THREE.Mesh(circlesStIr, StIrmat));
-        scene.add(new THREE.Mesh(circlesAch, Achmat));
-        scene.add(new THREE.Mesh(circlesDef, Defmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesIr, Irmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesStIr, StIrmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesAch, Achmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesDef, Defmat));
     }
 
     function createBolide(index, bolideSize) {
@@ -926,11 +1164,14 @@ require(['threex.planets/package.require.js'
 
         if (bolideObjects[index]) return;
 
-        var bolideSize = 0.005;
+        //var bolideSize = 0.005;
+        var bolideSize = kilometerScale * 50;
 
         var bolideMinDistance = 0.51;
 
         var bolideFallTime = 4;
+        var bolideDefaultSpeed = 10; // km/s
+        var bolideSpeedScale = 100;
 
         var bolideTime = bolideFallTime;
 
@@ -940,17 +1181,17 @@ require(['threex.planets/package.require.js'
         if( bol.Latitude.slice(-1) == "S" ) phi = -phi;
         if( bol.Longitude.slice(-1) == "W" ) theta = -theta;
 
-        var dx = Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-        var dy = Math.sin(phi * Math.PI / 180);
-        var dz = Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+        var dx = Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180); // X?
+        var dy = Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180); // Y?
+        var dz = Math.sin(phi * Math.PI / 180); // Z?
 
-        var dxo = -dx / bolideFallTime, dyo = -dy / bolideFallTime, dzo = -dz / bolideFallTime;
+        var dxo = -dx * kilometerScale * bolideDefaultSpeed, dyo = -dy * kilometerScale * bolideDefaultSpeed, dzo = -dz * kilometerScale * bolideDefaultSpeed;
 
         var bolide = createBolide(index, bolideSize);
 
         if (bol.vx != null && bol.vy != null && bol.vz != null) {
             var v = new THREE.Vector3(bol.vx, bol.vy, bol.vz);
-            v.divideScalar(100);
+            //v.divideScalar(100);
 
             // Taken from NASA's Fireball and Bolide Reports description of the Velocity Components:
             // The pre-impact velocity components are expressed in a geocentric Earth-fixed reference frame defined as follows: 
@@ -960,25 +1201,26 @@ require(['threex.planets/package.require.js'
             //
             // We have to re-map the components to the coordinate system our Earth object is currently in.
 
-            dxo = v.y;
-            dyo = v.z;
-            dzo = v.x;
+            dxo = v.x * kilometerScale;
+            dyo = v.y * kilometerScale;
+            dzo = v.z * kilometerScale;
         }
 
         var bolideEndX = bolideMinDistance * dx;
         var bolideEndY = bolideMinDistance * dy;
         var bolideEndZ = bolideMinDistance * dz;
 
-        scene.add(bolide);
+        earthSystemGeographic.add(bolide);
+        //earthSystem.matrixWorldNeedsUpdate = true;
 
         onRenderFcts.push(function callback(delta, now) {
             bolideTime -= delta;
 
             bolideTime = Math.max(0, bolideTime);
 
-            bolide.position.x = bolideEndX - bolideTime * dxo;
-            bolide.position.y = bolideEndY - bolideTime * dyo;
-            bolide.position.z = bolideEndZ - bolideTime * dzo;
+            bolide.position.x = bolideEndX - bolideTime * dxo * bolideSpeedScale;
+            bolide.position.y = bolideEndY - bolideTime * dyo * bolideSpeedScale;
+            bolide.position.z = bolideEndZ - bolideTime * dzo * bolideSpeedScale;
 
             if (bolideTime <= 0 || !bolideObjects[index]) {
                 onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
@@ -1012,17 +1254,20 @@ require(['threex.planets/package.require.js'
 
     // other
 
+    
     /*
-    var x = new THREE.Mesh(new THREE.CubeGeometry(5, 0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0xFF0000 }));
-    x.position.x = 2.5;
-    var y = new THREE.Mesh(new THREE.CubeGeometry(0.01, 5, 0.01), new THREE.MeshBasicMaterial({ color: 0x00FF00 }));
-    y.position.y = 2.5;
-    var z = new THREE.Mesh(new THREE.CubeGeometry(0.01, 0.01, 5), new THREE.MeshBasicMaterial({ color: 0x0000FF }));
-    z.position.z = 2.5;
+    var x = new THREE.Mesh(new THREE.CubeGeometry(1, 0.05, 0.05), new THREE.MeshBasicMaterial({ color: 0xFF0000, side: THREE.DoubleSide }));
+    x.scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
+    x.position.x = 0;
     scene.add(x);
+    var y = new THREE.Mesh(new THREE.CubeGeometry(0.00001, 5, 0.00001), new THREE.MeshBasicMaterial({ color: 0x00FF00 }));
+    y.position.y = 0;
+    var z = new THREE.Mesh(new THREE.CubeGeometry(0.00001, 0.00001, 5), new THREE.MeshBasicMaterial({ color: 0x0000FF }));
+    z.position.z = 0;
     scene.add(y);
     scene.add(z);
     */
+    
 
     $(document).ready(function () {
         THREEx.WindowResize(renderer, camera);
@@ -1031,13 +1276,20 @@ require(['threex.planets/package.require.js'
     THREEx.FullScreen.bindKey({ charCode: 'm'.charCodeAt(0) });
     // CONTROLS
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.minDistance = 0.65;
-    controls.maxDistance = 5.5;
+    //controls.target = new THREE.Vector3().copy(earthSystem.position);
+    controls.target = new THREE.Vector3();
+    //controls.target = earthSystem.position;
+
+    controls.minDistance = 0.65 * earthSystemScale;
+    controls.maxDistance = 500; // * earthSystemScale;
     controls.noPan = true;
-    controls.rotateSpeed = 0.52;
-    controls.targetRadius = 0.5;
+    controls.rotateSpeed = 0.55 / earthSystemScale;
+    controls.slowDownDistance = 2 * earthSystemScale;
+
+    controls.targetRadius = 0.5 * earthSystemScale;
     controls.autoRotateSpeed = 0.25;
     controls.rotateLeft(-1);
+    controls.autoRotate = true;
     controls.addEventListener('change', SelectionUpdate);
 
 
@@ -1068,7 +1320,7 @@ require(['threex.planets/package.require.js'
             }
 
             if(!visible) {
-                scene.remove(bolideObjects[i]);
+                earthSystemGeographic.remove(bolideObjects[i]);
                 bolideObjects[i] = null;
             }
         }
@@ -1086,9 +1338,9 @@ require(['threex.planets/package.require.js'
         var animate = function () {
             if (temp < DateEnd && !stopAnimation) {
                 tempStart = new Date(temp.getFullYear() - 1, temp.getMonth(), temp.getDate());
-                temp = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate() + 8);
+                temp = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate() + 2);
                 $("#element").dateRangeSlider("values", tempStart, temp);
-                window.setTimeout(animate, 100);
+                window.setTimeout(animate, 20);
             }
             else
             {
@@ -1184,7 +1436,7 @@ require(['threex.planets/package.require.js'
         RESlider();
         IESlider();
         AltSlider();
-        //StartAnimation();
+        StartAnimation();
     });
 
 });
