@@ -67,7 +67,7 @@ h1 {
 }
 #property-table{
 }
-#table-data{
+#table-data, #table-data-mete{
     color:white;
     background-color: rgba(56, 56, 56, 0.90);
     font-size:12px;

@@ -4,6 +4,7 @@ require(['threex.planets/package.require.js'
     var container = $("#rofpanel").get(0);
     var selectedIndex;
     $("#table-data").hide();
+    $("#table-data-mete").hide();
     if (Detector.webgl)
         renderer = new THREE.WebGLRenderer({ antialias: true });
     else
@@ -32,8 +33,30 @@ require(['threex.planets/package.require.js'
 
     StartDateMin = new Date(2009, 0, 1);
     var activeTab = -1;
+    ///////////////////////////////////////////////
+    //var canvas1, context1, texture1, sprite1;
+    //canvas1 = document.createElement('canvas');
+    ////canvas1.width = 200;
+    ////canvas1.height = 100;
+    //context1 = canvas1.getContext('2d');
+    //context1.font = "Bold 20px Arial";
+    //context1.fillStyle = "rgba(1,1,1,0.95)";
+    //context1.fillText('Hello, world!', 0, 20);
 
-   
+    //// canvas contents will be used for a texture
+    //texture1 = new THREE.Texture(canvas1)
+    //texture1.needsUpdate = true;
+    //var spriteMaterial = new THREE.SpriteMaterial({ map: texture1 });
+    //sprite1 = new THREE.Sprite(spriteMaterial);
+
+    var sprite1 = makeTextSprite(" World! ",
+		{ fontsize: 32, fontface: "Georgia", borderColor: { r: 0, g: 0, b: 255, a: 1.0 } });
+    sprite1.scale.set(0.2, 0.1, 0.5);
+    sprite1.position.set(0.50, 0.50, 0.50);
+ 
+
+    ////////////////////////////////////////////////
+
 
     $("#element").dateRangeSlider({
 
@@ -185,27 +208,45 @@ require(['threex.planets/package.require.js'
     }
 
 
-    function infoPanel(index){
-        var rad_en = bolides[index].RadiatedEnergy;
-        var distance = bolides[index].Altitude;
-        var app_mag = apparentMagnitude(rad_en,distance*1000 );
-        $("#datetime").text(bolides[index].Date);
-        $("#latitude").text(bolides[index].Latitude);
-        $("#longtitude").text(bolides[index].Longitude);
-        $("#altitude").text(distance);
-        $("#velocity").text(bolides[index].Velocity);
-        $("#vx").text(bolides[index].vx);
-        $("#vy").text(bolides[index].vy);
-        $("#vz").text(bolides[index].vz);
-        $("#raden").text(rad_en);
-        $("#imen").text(bolides[index].ImpactEnergy);
-        if (distance != null) {
-            $("#appMag").text(app_mag);
-        }
-        else {
-            $("#appMag").text("");
-        }
-        $("#table-data").show();
+    function infoPanel(index) {
+        if (($("#info-panel").tabs("option", "active")) == 0) {
+            $("#table-data-mete").hide();
+            var rad_en = bolides[index].RadiatedEnergy;
+            var distance = bolides[index].Altitude;
+            var app_mag = apparentMagnitude(rad_en, distance * 1000);
+            $("#datetime").text(bolides[index].Date);
+            $("#latitude").text(bolides[index].Latitude);
+            $("#longtitude").text(bolides[index].Longitude);
+            $("#altitude").text(distance);
+            $("#velocity").text(bolides[index].Velocity);
+            $("#vx").text(bolides[index].vx);
+            $("#vy").text(bolides[index].vy);
+            $("#vz").text(bolides[index].vz);
+            $("#raden").text(rad_en);
+            $("#imen").text(bolides[index].ImpactEnergy);
+            if (distance != null) {
+                $("#appMag").text(app_mag);
+            }
+            else {
+                $("#appMag").text("");
+            }
+            $("#table-data").show();
+       }
+        if (($("#info-panel").tabs("option", "active")) == 1) {
+            $("#table-data").hide();
+           $("#Mname").text(meteorites[index].name);
+           $("#Mtype").text(meteorites[index].recclass);
+           $("#Mclass").text(MeteoriteClasses[meteorites[index].recclass]);
+           $("#Mmass").text(meteorites[index].mass);
+           $("#Mfall").text(meteorites[index].fall);
+           $("#Myear").text(meteorites[index].year);
+           $("#Mlatitude").text(meteorites[index].reclat);
+           $("#Mlongtitude").text(meteorites[index].reclong);
+           
+
+           $("#table-data-mete").show();
+
+       }
     }
 
     var idlist = [];
@@ -299,6 +340,9 @@ require(['threex.planets/package.require.js'
     light.position.set(5, 3, 5)
     scene.add(light)
 
+    /////////////
+   // scene.add(sprite1);
+    //////////////////
     //////////////////////////////////////////////////////////////////////////////////
     //      add an object and make it move                  //
     //////////////////////////////////////////////////////////////////////////////////  
@@ -380,6 +424,12 @@ require(['threex.planets/package.require.js'
         onMouseDownPosition.x = event.clientX;
         onMouseDownPosition.y = event.clientY;
 
+      
+        // update the mouse variable
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+
     }
 
     function onDocumentMouseMove(event) {
@@ -387,7 +437,9 @@ require(['threex.planets/package.require.js'
         event.preventDefault();
 
         if (isMouseDown) {
-
+            ////
+            sprite1.position.set(event.clientX, event.clientY - 20, 0);
+            ////
             theta = -((event.clientX - onMouseDownPosition.x) * 0.5) + onMouseDownTheta;
             phi = ((event.clientY - onMouseDownPosition.y) * 0.5) + onMouseDownPhi;
 
@@ -398,6 +450,7 @@ require(['threex.planets/package.require.js'
             camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
             camera.updateMatrix();
 
+         
         }
 
         var vector = new THREE.Vector3((event.clientX / renderer.domElement.width) * 2 - 1, -(event.clientY / renderer.domElement.height) * 2 + 1, 0.5);
@@ -459,6 +512,8 @@ require(['threex.planets/package.require.js'
 
         //updateHash();
         interact(event);
+        sprite1.position.set((event.clientX / renderer.domElement.width) * 2 - 1, -(event.clientY / renderer.domElement.height) * 2 + 1, 1);
+
         render();
 
     }
@@ -495,7 +550,13 @@ require(['threex.planets/package.require.js'
     function SelectionUpdate() {
         if (selectedIndex == null) return;
         var p, v, percX, percY, left, top;
-        v = bolideObjects[selectedIndex].position.clone();
+        if (($("#info-panel").tabs("option", "active")) == 0) {
+            v = bolideObjects[selectedIndex].position.clone();
+        }
+        if (($("#info-panel").tabs("option", "active")) == 1) {
+            return;
+           // v = meteoriteObjects[selectedIndex].position.clone();
+        }
         v.project(camera);
         percX = (v.x + 1) / 2;
         percY = (-v.y + 1) / 2;
@@ -508,32 +569,45 @@ require(['threex.planets/package.require.js'
 
     function interact(event) {
 
-
         var raycaster = new THREE.Raycaster();
         var mouse = new THREE.Vector2();
 
         //function onMouseClick(event) {
 
-            // calculate mouse position in normalized device coordinates
-            // (-1 to +1) for both components
+        // calculate mouse position in normalized device coordinates
+        // (-1 to +1) for both components
 
         mouse.x = (event.clientX / renderer.domElement.width) * 2 - 1;
         mouse.y = -(event.clientY / renderer.domElement.height) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-
+        raycaster.setFromCamera(mouse, camera);
+        if(($("#info-panel").tabs("option", "active")) == 0){
             // calculate objects intersecting the picking ray
             var intersects = raycaster.intersectObjects(bolideObjects, true);
+           
 
 
             for (var i = 0; i < intersects.length; i++) {
-                //alert(intersects[i].object);
+                //
                 /////////////////////////////////////////////////////////////////////////////////
-                infoPanel(i);
                 selectedIndex = intersects[i].object.name;
+                infoPanel(selectedIndex);
                 SelectionUpdate();
                 break;
 
             }
+        }
+        if(($("#info-panel").tabs("option", "active")) == 1)
+        {
+            var intersects = raycaster.intersectObjects(meteoriteObjects, true);
+            for (var i = 0; i < intersects.length; i++) {
+                // alert(intersects[i].object);
+           
+                selectedIndex = intersects[i].object.name;
+
+                infoPanel(selectedIndex);
+            }
+        }
+    }
 
         //}
 
@@ -543,11 +617,12 @@ require(['threex.planets/package.require.js'
             raycaster.setFromCamera(mouse, camera);
 
             // calculate objects intersecting the picking ray
-            var intersects = raycaster.intersectObjects(bolideObjects, true);
-            
+           // var intersects = raycaster.intersectObjects(bolideObjects, true);
+            var intersects = raycaster.intersectObjects(meteoriteObjects, true);
            
             for (var i = 0; i < intersects.length; i++) {
-                alert(intersects[i].object);
+               
+                //alert(intersects[i].object);
                 //intersects[i].object.material.color.set(0xff0000);
 
             }
@@ -609,7 +684,7 @@ require(['threex.planets/package.require.js'
 
         //brush.position.y = 2000;
 
-    }
+    //}
 
     function animate() {
         requestAnimationFrame(animate);
@@ -671,33 +746,54 @@ require(['threex.planets/package.require.js'
     //
     var bolideObjects = [];
     //
-
+    var meteoriteObjects = [];
     function createMeteorites() {
 
-        var material = new THREE.MeshBasicMaterial({
-            color: 0x00f000
-        });
-
-        
+        var material;
+       
         var segments = 16;
 
-        var circles = new THREE.Geometry();
-
-        
+        var circlesCh = new THREE.Geometry();
+        var circlesAch = new THREE.Geometry();
+        var circlesIr = new THREE.Geometry();
+        var circlesStIr = new THREE.Geometry();
+        var circlesDef = new THREE.Geometry();
        
-        for (var i = 0; i < meteorites.length; i++) {
+        var Chmat = new THREE.MeshBasicMaterial({
+            color: 0x689F38 // green
+        });
 
-            
+        var Achmat = new THREE.MeshBasicMaterial({
+            color: 0x03A9F4 //blue
+        });
+
+        var Irmat = new THREE.MeshBasicMaterial({
+            color: 0xFFEB3B // yellow
+        });
+
+        var StIrmat = new THREE.MeshBasicMaterial({
+            color: 0xFF5722 //orange
+        });
+
+        var Defmat = new THREE.MeshBasicMaterial({
+            color: 0x9b59b6 //purple
+        });
+        var minr, maxr;
+        for (var i = 0; i < 5000; i++){// meteorites.length; i++) {
+           
             var radius = 0.001;
+           
             if (meteorites[i].mass > 1) {
-                 radius = 0.0004 * Math.pow(meteorites[i].mass, 1 / 4);
-               // radius = 0.001 * Math.log(meteorites[i].mass);
+                radius = 0.0004 * Math.pow(meteorites[i].mass, 1 / 4);
+                
+
+
+                // radius = 0.001 * Math.log(meteorites[i].mass);
             }
-
             var circleGeometry = new THREE.CircleGeometry(radius, segments);
-
             var circle = new THREE.Mesh(circleGeometry, material);
-            circle.position.z = 0.51;
+            circle.position.z = 0.51;// + ((radius - minr) / (maxr - minr)) * (0.53 - 0.51) //0.51;
+            
             var m = new THREE.Matrix4();
             var n = new THREE.Matrix4();
             m.makeRotationX((-meteorites[i].reclat / 180) * Math.PI);
@@ -706,10 +802,43 @@ require(['threex.planets/package.require.js'
             n.multiply(m);
             circle.updateMatrix();
             circle.applyMatrix(n);
-            THREE.GeometryUtils.merge(circles, circle);
+            meteoriteObjects.push(circle);
+            circle.name = i;
+
+            switch(MeteoriteClasses[meteorites[i].recclass]) {
+                case "Chondrites":
+                 
+                    THREE.GeometryUtils.merge(circlesCh, circle);
+                    break;
+                case "Achondrites":
+                       
+                    THREE.GeometryUtils.merge(circlesAch, circle);
+                    break;
+                case "Stony Irons":
+                  
+                    THREE.GeometryUtils.merge(circlesIr, circle);
+                    break;
+                case "Irons":
+                   
+                    THREE.GeometryUtils.merge(circlesStIr, circle);
+                    break;
+                default:
+                   
+                    THREE.GeometryUtils.merge(circlesDef, circle);
+            } 
+
+         //   THREE.GeometryUtils.merge(circles, circle);
+
+            circle.matrixWorld = circle.matrix;
+            //scene.add(circle);
 
         }
-         scene.add(new THREE.Mesh(circles, material));
+        scene.add(new THREE.Mesh(circlesCh, Chmat));
+        
+        scene.add(new THREE.Mesh(circlesIr, Irmat));
+        scene.add(new THREE.Mesh(circlesStIr, StIrmat));
+        scene.add(new THREE.Mesh(circlesAch, Achmat));
+        scene.add(new THREE.Mesh(circlesDef, Defmat));
     }
 
     function createBolide(index, bolideSize) {
