@@ -17,6 +17,19 @@
     overflow: hidden;
 }
 
+#SpaceAppChallenge{
+  position: absolute;
+    z-index: 10;
+    left: 100px;
+    top: 2px;
+}
+#NASA{
+  position: absolute;
+    z-index: 10;
+    left: 50px;
+    top: 2px;
+}
+
 .frame {
     fill: none;
     pointer-events: all;
