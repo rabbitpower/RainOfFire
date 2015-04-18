@@ -491,7 +491,7 @@ require(['threex.planets/package.require.js'
 
     scene.add(solarSystem);
 
-    var toTheSun = new THREE.Mesh(new THREE.CubeGeometry(3000, 0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0xFF0000, side: THREE.DoubleSide }));
+    var toTheSun = new THREE.Mesh(new THREE.BoxGeometry(3000, 0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0xFF0000, side: THREE.DoubleSide }));
     toTheSun.scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
     toTheSun.updateMatrix();
     var toTheSunMatrix = new THREE.Matrix4().copy(toTheSun.matrix);
@@ -637,7 +637,6 @@ require(['threex.planets/package.require.js'
     //      Camera Controls                         //
     //////////////////////////////////////////////////////////////////////////////////
     var projector = new THREE.Projector();
-    //var ray = new THREE.Raycaster(camera.position, null);
 
     //var mouse = { x: 0, y: 0 }
     //var mouse3D, isMouseDown = false, onMouseDownPosition = new THREE.Vector2(),
@@ -783,21 +782,31 @@ require(['threex.planets/package.require.js'
 
 
     function SelectionUpdate() {
-        if (selectedIndex == null) return;
+        if (selectedIndex == null) {
+            $trackingOverlay.css('display', 'none');
+            return;
+        }
         var p, v, percX, percY, left, top;
         if (($("#info-panel").tabs("option", "active")) == 0) {
+            if (!bolideObjects[selectedIndex]) {
+                $trackingOverlay.css('display', 'none');
+                return;
+            }
             v = bolideObjects[selectedIndex].position.clone();
         }
         if (($("#info-panel").tabs("option", "active")) == 1) {
+            $trackingOverlay.css('display', 'none');
             return;
            // v = meteoriteObjects[selectedIndex].position.clone();
         }
+        v.applyMatrix4(earthSystemGeographic.matrixWorld);
         v.project(camera);
         percX = (v.x + 1) / 2;
         percY = (-v.y + 1) / 2;
         left = percX * renderer.domElement.width;
         top = percY * renderer.domElement.height;
         $trackingOverlay
+            .css('display', 'block')
             .css('left', (left - $trackingOverlay.width() / 2) + 'px')
             .css('top', (top - $trackingOverlay.height() / 2) + 'px');
     }
@@ -815,6 +824,14 @@ require(['threex.planets/package.require.js'
         mouse.x = (event.clientX / renderer.domElement.width) * 2 - 1;
         mouse.y = -(event.clientY / renderer.domElement.height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
+
+        raycaster.near = camera.near;
+        raycaster.far = camera.far;
+
+        //raycaster.origin.copy(camera.position);
+        //raycaster.direction.set(coords.x, coords.y, 0.5).unproject(camera).sub(camera.position).normalize();
+
+
         if(($("#info-panel").tabs("option", "active")) == 0){
             // calculate objects intersecting the picking ray
             var intersects = raycaster.intersectObjects(bolideObjects, true);
@@ -833,6 +850,12 @@ require(['threex.planets/package.require.js'
         }
         if(($("#info-panel").tabs("option", "active")) == 1)
         {
+            var matrix = new THREE.Matrix4();
+            matrix.getInverse(earthSystemGeographic.matrixWorld);
+
+            raycaster.ray.origin.applyMatrix4(matrix);
+            raycaster.ray.direction.transformDirection(matrix);
+
             var intersects = raycaster.intersectObjects(meteoriteObjects, true);
             for (var i = 0; i < intersects.length; i++) {
                 // alert(intersects[i].object);
@@ -940,6 +963,7 @@ require(['threex.planets/package.require.js'
 
         updateEarthSystem();
         controls.update();
+        SelectionUpdate();
 
         renderer.render(scene, camera);
         //controls.rotateUp(-0.0002);
@@ -985,6 +1009,8 @@ require(['threex.planets/package.require.js'
     var bolideObjects = [];
     //
     var meteoriteObjects = [];
+    var meteoriteGroup = new THREE.Group({ name: 'meteoriteGroup' });
+
     function createMeteorites() {
 
         var material;
@@ -1017,7 +1043,7 @@ require(['threex.planets/package.require.js'
             color: 0x9b59b6 //purple
         });
         var minr, maxr;
-        for (var i = 0; i < 5000; i++){// meteorites.length; i++) {
+        for (var i = 0; i < 1000; i++){// meteorites.length; i++) {
            
             var radius = 0.001;
            
@@ -1048,37 +1074,42 @@ require(['threex.planets/package.require.js'
             switch(MeteoriteClasses[meteorites[i].recclass]) {
                 case "Chondrites":
                  
-                    THREE.GeometryUtils.merge(circlesCh, circle);
+                    circlesCh.merge(circle.geometry, circle.matrix);
                     break;
                 case "Achondrites":
                        
-                    THREE.GeometryUtils.merge(circlesAch, circle);
+                    circlesAch.merge(circle.geometry, circle.matrix);
                     break;
                 case "Stony Irons":
                   
-                    THREE.GeometryUtils.merge(circlesIr, circle);
+                    circlesIr.merge(circle.geometry, circle.matrix);
                     break;
                 case "Irons":
                    
-                    THREE.GeometryUtils.merge(circlesStIr, circle);
+                    circlesStIr.merge(circle.geometry, circle.matrix);
                     break;
                 default:
                    
-                    THREE.GeometryUtils.merge(circlesDef, circle);
+                    circlesDef.merge(circle.geometry, circle.matrix);
             } 
 
          //   THREE.GeometryUtils.merge(circles, circle);
 
             circle.matrixWorld = circle.matrix;
-            //scene.add(circle);
+            //earthSystemGeographic.add(circle);
 
         }
-        earthSystemGeographic.add(new THREE.Mesh(circlesCh, Chmat));
-        
-        earthSystemGeographic.add(new THREE.Mesh(circlesIr, Irmat));
-        earthSystemGeographic.add(new THREE.Mesh(circlesStIr, StIrmat));
-        earthSystemGeographic.add(new THREE.Mesh(circlesAch, Achmat));
-        earthSystemGeographic.add(new THREE.Mesh(circlesDef, Defmat));
+
+        earthSystemGeographic.remove(meteoriteGroup);
+        meteoriteGroup = new THREE.Group({ name: 'meteoriteGroup' });
+
+        meteoriteGroup.add(new THREE.Mesh(circlesCh, Chmat));
+        meteoriteGroup.add(new THREE.Mesh(circlesIr, Irmat));
+        meteoriteGroup.add(new THREE.Mesh(circlesStIr, StIrmat));
+        meteoriteGroup.add(new THREE.Mesh(circlesAch, Achmat));
+        meteoriteGroup.add(new THREE.Mesh(circlesDef, Defmat));
+
+        earthSystemGeographic.add(meteoriteGroup);
     }
 
     function createBolide(index, bolideSize) {
@@ -1290,7 +1321,7 @@ require(['threex.planets/package.require.js'
     controls.autoRotateSpeed = 0.25;
     controls.rotateLeft(-1);
     controls.autoRotate = true;
-    controls.addEventListener('change', SelectionUpdate);
+    //controls.addEventListener('change', function () { window.setTimeout(SelectionUpdate, 20); });
 
 
     function parseJsonDate(jsonDateString) {
@@ -1362,16 +1393,24 @@ require(['threex.planets/package.require.js'
             activeTab = $("#info-panel").tabs("option", "active");
             switch (activeTab) {
                 case 0:
-                    { StartAnimation(); }
+                    {
+                        selectedIndex = null;
+                        earthSystemGeographic.remove(meteoriteGroup);
+                        //StartAnimation();
+                    }
                     break;
                 case 1:
                     {
+                        selectedIndex = null;
                         stopAnimation = true;
                         createMeteorites();
                     }
                     break;
                 case 2:
-                    { stopAnimation = true; }
+                    {
+                        selectedIndex = null;
+                        stopAnimation = true;
+                    }
                     break;
                 default:
                     { }

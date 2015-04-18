@@ -535,8 +535,8 @@ THREE.OrbitControls = function ( object, domElement ) {
 		scope.update();
 		scope.dispatchEvent( startEvent );
 		scope.dispatchEvent( endEvent );
-
-	}
+		scope.dispatchEvent(changeEvent);
+    }
 
 	function onKeyDown( event ) {
 
@@ -674,6 +674,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 				dollyStart.copy( dollyEnd );
 
 				scope.update();
+				scope.dispatchEvent(changeEvent);
 				break;
 
 			case 3: // three-fingered touch: pan

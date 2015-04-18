@@ -7358,7 +7358,7 @@ THREE.EventDispatcher.prototype = {
 
 		constructor: THREE.Raycaster,
 
-		precision: 0.0001,
+		precision: 0.000001,
 		linePrecision: 1,
 
 		set: function ( origin, direction ) {
