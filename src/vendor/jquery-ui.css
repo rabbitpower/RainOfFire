@@ -24,7 +24,7 @@
 	padding: 0;
 	border: 0;
 	outline: 0;
-	line-height: 1.3;
+	/* line-height: 1.3; */
 	text-decoration: none;
 	font-size: 100%;
 	list-style: none;
@@ -775,7 +775,8 @@ button.ui-button::-moz-focus-inner {
 	background-position: -65px -16px;
 }
 .ui-tabs {
-	position: relative;/* position: relative prevents IE scroll bug (element with position: relative inside container with overflow: auto appear as "fixed") */
+	position: relative;
+	position: relative prevents IE scroll bug (element with position: relative inside container with overflow: auto appear as "fixed")
 	padding: .2em;
 }
 .ui-tabs .ui-tabs-nav {
@@ -846,18 +847,18 @@ body .ui-tooltip {
 	font-size: 1em;
 }
 .ui-widget-content {
-	border: 1px solid #555555;
-	background: #000000 url("images/ui-bg_gloss-wave_25_000000_500x100.png") 50% top repeat-x;
+	/* border: 1px solid #555555; */
+	/* background: #222222 url("images/ui-bg_gloss-wave_25_000000_500x100.png") 50% top repeat-x; */
 	color: #ffffff;
 }
 .ui-widget-content a {
 	color: #ffffff;
 }
 .ui-widget-header {
-	border: 1px solid #333333;
-	background: #444444 url("images/ui-bg_highlight-soft_44_444444_1x100.png") 50% 50% repeat-x;
+	/* border: 1px solid #333333; */
+	/* background: #444444 url("images/ui-bg_highlight-soft_44_444444_1x100.png") 50% 50% repeat-x; */
 	color: #ffffff;
-	font-weight: bold;
+	font-weight: initial;
 }
 .ui-widget-header a {
 	color: #ffffff;
@@ -869,7 +870,7 @@ body .ui-tooltip {
 .ui-widget-content .ui-state-default,
 .ui-widget-header .ui-state-default {
 	border: 1px solid #444444;
-	background: #222222 url("images/ui-bg_highlight-soft_35_222222_1x100.png") 50% 50% repeat-x;
+	background: #474D57;
 	font-weight: normal;
 	color: #eeeeee;
 }
@@ -1190,25 +1191,25 @@ body .ui-tooltip {
 .ui-corner-top,
 .ui-corner-left,
 .ui-corner-tl {
-	border-top-left-radius: 6px;
+	/* border-top-left-radius: 6px; */
 }
 .ui-corner-all,
 .ui-corner-top,
 .ui-corner-right,
 .ui-corner-tr {
-	border-top-right-radius: 6px;
+	/* border-top-right-radius: 6px; */
 }
 .ui-corner-all,
 .ui-corner-bottom,
 .ui-corner-left,
 .ui-corner-bl {
-	border-bottom-left-radius: 6px;
+	/* border-bottom-left-radius: 6px; */
 }
 .ui-corner-all,
 .ui-corner-bottom,
 .ui-corner-right,
 .ui-corner-br {
-	border-bottom-right-radius: 6px;
+	/* border-bottom-right-radius: 6px; */
 }
 
 /* Overlays */
