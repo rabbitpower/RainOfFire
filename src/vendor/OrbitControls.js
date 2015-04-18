@@ -43,6 +43,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
     // The radius of the target object - used for calculating mouse rotation speed
 	this.targetRadius = 0;
+	this.slowDownDistance = 0;
 
 	// Limits to how far you can zoom in and out ( OrthographicCamera only )
 	this.minZoom = 0;
@@ -343,6 +344,12 @@ THREE.OrbitControls = function ( object, domElement ) {
 			lastPosition.copy( this.object.position );
 			lastQuaternion.copy (this.object.quaternion );
 
+			if (this.object instanceof THREE.PerspectiveCamera) {
+
+			    this.object.near = radius / 100;
+			    this.object.updateProjectionMatrix();
+
+			}
 		}
 
 	};
@@ -439,10 +446,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 			rotateDelta.subVectors( rotateEnd, rotateStart );
 
 			// rotating across whole screen goes 360 degrees around
-			scope.rotateLeft(2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed * (scope.radius - scope.targetRadius));
+			scope.rotateLeft(1 * Math.PI * rotateDelta.x / element.clientHeight * scope.rotateSpeed * (Math.min(scope.slowDownDistance, scope.radius) - scope.targetRadius));
 
 			// rotating up and down along whole screen attempts to go 360, but limited to 180
-			scope.rotateUp(1 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed * (scope.radius - scope.targetRadius));
+			scope.rotateUp(1 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed * (Math.min(scope.slowDownDistance, scope.radius) - scope.targetRadius));
 
 			rotateStart.copy( rotateEnd );
 
@@ -633,9 +640,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 				rotateDelta.subVectors( rotateEnd, rotateStart );
 
 				// rotating across whole screen goes 360 degrees around
-				scope.rotateLeft(2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed * (scope.radius - scope.targetRadius));
+				scope.rotateLeft(1 * Math.PI * rotateDelta.x / element.clientHeight * scope.rotateSpeed * (Math.min(scope.slowDownDistance, scope.radius) - scope.targetRadius));
 				// rotating up and down along whole screen attempts to go 360, but limited to 180
-				scope.rotateUp(1 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed * (scope.radius - scope.targetRadius));
+				scope.rotateUp(1 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed * (Math.min(scope.slowDownDistance, scope.radius) - scope.targetRadius));
 
 				rotateStart.copy( rotateEnd );
 
