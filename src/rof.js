@@ -1031,12 +1031,13 @@ require(['threex.planets/package.require.js'
             var circleGeometry = new THREE.CircleGeometry(radius, segments);
             var circle = new THREE.Mesh(circleGeometry, material);
 
-            circle.position.z = 0.51 + (1 - (radius - 0.0004) / (0.0222 - 0.0004)) * (0.52 - 0.51); //0.51;
+            circle.rotation.y = Math.PI / 2;
+            circle.position.x = 0.51 + (1 - (radius - 0.0004) / (0.0222 - 0.0004)) * (0.52 - 0.51); //0.51;
             
             var m = new THREE.Matrix4();
             var n = new THREE.Matrix4();
-            m.makeRotationX((-meteorites[i].reclat / 180) * Math.PI);
-            n.makeRotationY((meteorites[i].reclong / 180) * Math.PI);
+            m.makeRotationY((-meteorites[i].reclat / 180) * Math.PI);
+            n.makeRotationZ((meteorites[i].reclong / 180) * Math.PI);
             //m.multiply(n);
             n.multiply(m);
             circle.updateMatrix();
@@ -1072,12 +1073,12 @@ require(['threex.planets/package.require.js'
             //scene.add(circle);
 
         }
-        scene.add(new THREE.Mesh(circlesCh, Chmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesCh, Chmat));
         
-        scene.add(new THREE.Mesh(circlesIr, Irmat));
-        scene.add(new THREE.Mesh(circlesStIr, StIrmat));
-        scene.add(new THREE.Mesh(circlesAch, Achmat));
-        scene.add(new THREE.Mesh(circlesDef, Defmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesIr, Irmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesStIr, StIrmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesAch, Achmat));
+        earthSystemGeographic.add(new THREE.Mesh(circlesDef, Defmat));
     }
 
     function createBolide(index, bolideSize) {
