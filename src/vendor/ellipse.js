@@ -18,14 +18,13 @@
     this.CreateParticle(opts.jed, opts.texture_path);
   }
 
-  Orbit3D.prototype.CreateOrbit = function(jed) {
+  Orbit3D.prototype.CreateOrbit = function(jed, segments) {
     var pts;
     var points;
     var time = jed;
     var pts = []
     var limit = this.eph.P ? this.eph.P+1 : this.eph.per;
-    var parts = this.eph.e > .20 ? 300 : 100;   // extra precision for high eccentricity
-    parts *= 100;
+    var parts = segments ? segments : this.eph.e > .20 ? 300 : 100;   // extra precision for high eccentricity
     var delta = limit / parts;
     var prev;
     time -= limit / 2;
@@ -121,9 +120,9 @@
     return ret;
   }
 
-  Orbit3D.prototype.getEllipse = function() {
+  Orbit3D.prototype.getEllipse = function(segments) {
     if (!this.ellipse)
-      this.ellipse = this.CreateOrbit(this.opts.jed);
+      this.ellipse = this.CreateOrbit(this.opts.jed, segments);
     return this.ellipse;
   }
 
