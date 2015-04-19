@@ -290,7 +290,7 @@ require(['threex.planets/package.require.js'
                 solarSystem.add(bolideObjects[selectedIndex]);
                 bolideObjects[selectedIndex].scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
 
-                controls.dollyOut(50000);
+                //controls.dollyOut(50000);
 
                 SelectionUpdate();
             }
@@ -556,19 +556,16 @@ require(['threex.planets/package.require.js'
     }
 
     function updateEarthSystem() {
-        //if (!stopAnimation) {
-        //    jed = toJED($("#element").dateRangeSlider("values").max);
-        //}
-        //else {
-        //jed = 2451545 - 10; //0.25;// toJED(new Date());
-
         var date = new Date(); //$("#element").dateRangeSlider("values").max;// new Date();
 
         if (animatingCollision) {
             var date = new Date(animationStart.getTime() + (new Date().getTime() - animationT0.getTime()) * animationSpeedUp);
         }
         else {
-            date = new Date(2013, 1, 15, 5, 20, 33);
+            //date = new Date(2013, 1, 15, 5, 20, 33);
+            if (animating) {
+                date = $("#element").dateRangeSlider("values").max;
+            }
         }
 
         jed = toJED(date); // + (new Date().getTime() - start) * 1000 / (1000 * 60 * 60 * 24);
@@ -738,9 +735,26 @@ require(['threex.planets/package.require.js'
     }
 
     var doZoomIn = false;
+    var doZoomOut = false;
+    var rotateLeft = false;
+    var rotateRight = false;
 
     function keyDownTextField(e) {
-        doZoomIn = !doZoomIn;
+        var keyCode = e.keyCode;
+        switch (keyCode) {
+            case 49:
+                doZoomIn = !doZoomIn;
+                break;
+            case 50:
+                doZoomOut = !doZoomOut;
+                break;
+            case 51:
+                rotateLeft = !rotateLeft;
+                break;
+            case 52:
+                rotateRight = !rotateRight;
+                break;
+        }        
     }
 
     document.addEventListener("keydown", keyDownTextField, false);
@@ -749,9 +763,18 @@ require(['threex.planets/package.require.js'
 
         updateEarthSystem();
 
-        if (animatingCollision && doZoomIn) {
+        if (doZoomIn) {
             //if(controls.radius > 1 * earthSystemScale)
                 controls.dollyIn(1.004);
+        }
+        if (doZoomOut) {
+            controls.dollyOut(1.004);
+        }
+        if (rotateLeft) {
+            controls.rotateLeft(0.002);
+        }
+        if (rotateRight) {
+            controls.rotateLeft(-0.002);
         }
 
         controls.update();
@@ -1084,7 +1107,7 @@ require(['threex.planets/package.require.js'
         direction.sub(positionTminus1);
 
         var pts = []
-        var parts = 600000;
+        var parts = 60000;
 
         var prevPos = position;
 
@@ -1160,17 +1183,17 @@ require(['threex.planets/package.require.js'
 
     function addBolide(index, bol) {
 
-        //if (bolideObjects[index]) {
-        //    return;
-        //}
+        if (bolideObjects[index]) {
+            return;
+        }
 
         //var bolideSize = 0.005;
         var bolideSize = kilometerScale * 50;
 
         var bolideFallTime = 30;
-        var bolideSpeedScale = 1;
+        var bolideSpeedScale = 100;
 
-        var bolideTime = bolideFallTime;
+        var bolideTime = 5;
 
         var trajectory = getBolideBurstPositionAndVelocity(bol);
 
@@ -1184,11 +1207,38 @@ require(['threex.planets/package.require.js'
         //earthSystemGeographic.add(bolide);
         //earthSystem.matrixWorldNeedsUpdate = true;
 
-        addBolideTrajectory(index, bol, trajectory);
+        //addBolideTrajectory(index, bol, trajectory);
 
         onRenderFcts.push(function callback(delta, now) {
-            //bolideTime -= delta;
-            if (selectedIndex != index) return;
+            // everything that's not selected we animate as before
+            if (selectedIndex != index) {
+                if (bolideTime <= 0 || !bolideObjects[index]) {
+                    onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
+                    return;
+                }
+                if (bolide.parent != earthSystemGeographic) {
+                    solarSystem.remove(bolide);
+
+                    bolide.scale.set(1, 1, 1);
+
+                    earthSystemGeographic.add(bolide);
+                    return;
+                }
+
+                bolideTime -= delta;
+
+                bolideTime = Math.max(0, bolideTime);
+
+                bolide.position.x = trajectory.position.x - bolideTime * trajectory.velocity.x * bolideSpeedScale * kilometerScale;
+                bolide.position.y = trajectory.position.y - bolideTime * trajectory.velocity.y * bolideSpeedScale * kilometerScale;
+                bolide.position.z = trajectory.position.z - bolideTime * trajectory.velocity.z * bolideSpeedScale * kilometerScale;
+
+                if (bolideTime <= 0 || !bolideObjects[index]) {
+                    onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
+                    return;
+                }
+                return;
+            }
 
             var t = 1 - ((new Date().getTime() - animationT0.getTime()) * animationSpeedUp) / animationPreCollisionTime;
 
@@ -1310,6 +1360,7 @@ require(['threex.planets/package.require.js'
 
             if(!visible) {
                 earthSystemGeographic.remove(bolideObjects[i]);
+                solarSystem.remove(bolideObjects[i]);
                 bolideObjects[i] = null;
                 solarSystem.remove(bolideTrajectories[i]);
             }
@@ -1328,7 +1379,7 @@ require(['threex.planets/package.require.js'
         var animate = function () {
             if (temp < DateEnd && !stopAnimation) {
                 tempStart = new Date(temp.getFullYear() - 1, temp.getMonth(), temp.getDate());
-                temp = new Date(temp.getFullYear(), temp.getMonth(), temp.getDate() + 2);
+                temp = new Date(Date.UTC(temp.getFullYear(), temp.getMonth(), temp.getDate() + 1));
                 $("#element").dateRangeSlider("values", tempStart, temp);
                 window.setTimeout(animate, 20);
             }
