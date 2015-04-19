@@ -6,7 +6,7 @@
     <script src="vendor/jquery-2.1.3.min.js"></script>
     <!--<script src="vendor/jquery-1.9.1.min.js"></script>-->
     <!--<script src="vendor/jquery-ui-1.10.2.min.js"></script>-->
-    <script src="vendor/jquery.scrollbar.js"></script>
+    <!--<script src="vendor/jquery.scrollbar.js"></script>-->
     <script src="vendor/jquery-ui.js"></script>
     <script src="vendor/jQAllRangeSliders-withRuler-min.js"></script>
     <script src="vendor/jquery.mousewheel.min.js"></script>
@@ -31,7 +31,7 @@
     <link type="text/css" rel="stylesheet" href="style.css" />
     <link type="text/css" rel="stylesheet" href="vendor/jqrangeslider-theme.css" />
     <link type="text/css" rel="stylesheet" href="vendor/jquery-ui.css" />
-    <link type="text/css" rel="stylesheet" href="vendor/jquery.scrollbar.css" />
+    <!--<link type="text/css" rel="stylesheet" href="vendor/jquery.scrollbar.css" />-->
 </head>
 <body style='height: 100%; margin: 0px; background-color: #000000; width: 100%; overflow: hidden;'>
 
@@ -133,26 +133,28 @@ void main()
                                 appendTo: "#someElem"
                             })
                         });
-                        $(document).ready(function () {
-                            $(".scrollbar-inner").scrollbar();
-                        });
+                      
                     </script>
                 </div>
                 </div>
-            <div id="fragment-2">
-                <div class="scrollbar-inner">
-                    <ol id="selectable2"></ol>
-                    <script>
+            <div id="fragment-2" style="padding: 1em 1.2em 0em 0em">
+                
+                    <ol id="selectable2">
+                        <li class="ui-widget-content" style="background-color:#689F38; color:black">Chondrites</li>
+                        <li class ="ui-widget-content" style="background-color:#03A9F4; color:black">Achondrites</li>
+                        <li class="ui-widget-content" style="background-color:#FFEB3B; color:black">Irons</li>                        
+                        <li class="ui-widget-content" style="background-color:#FF5722; color:black">Stony Irons</li>
+                        <li class="ui-widget-content" style="background-color:#9b59b6; color:black">No category</li>
+                    </ol>
+                    <!--<script>
                         $(function () {
                            
                             $("#selectable2").selectable({
                                 appendTo: "#someElem2"
                             })
-                        });
-                        $(document).ready(function () {
-                            $(".scrollbar-inner").scrollbar();
-                        });
-                    </script>
+                        });-->
+                       
+                    <!--</script>-->
                 </div>
             </div>
 
@@ -277,16 +279,144 @@ void main()
 <div id="NASA"><img src="images/NASALogo.png" height="42"  /></div>
 <div id="SpaceAppChallenge"><img src="images/spaceAppsLogo.png" height="45" /></div>
 
-<div id="infoBox" title="Demo Information">
-<p>A <b>METEORID</b> is generally defined as an asteroid or comet fragment that orbits the Sun and has an approximate size between ten microns and a meter or so.</p>
-<br/>
-<p><b>METEORS</b>, or "shooting stars," are the visible paths of meteoroids that have entered the Earth's atmosphere at high velocities.</p>
-<br/>
-<p>A <b>FIREBALL</b> is an unusually bright meteor that reaches a visual magnitude of -3 or brighter when seen at the observer's zenith. Objects causing fireball events can exceed one meter in size.</p>
-<br/>
-<p>Fireballs that explode in the atmosphere are technically referred to as <b>BOLIDES</b> although the terms fireballs and bolides are often used interchangeably.</p>
-</div>
+<div id="infoBox" title="Information">
+    <div id="InfoTabs">
+        <ul>
+            <li><a href="#Tab1"><span>Info</span></a></li>
+            <li><a href="#Tab2"><span>Asteroid</span></a></li>
+            <!--<li><a href="#Tab3"><span>Asteroid Categories</span></a></li>-->
+            <!--<li><a href="#Tab4"><span>NEA</span></a></li>-->
+            <li><a href="#Tab5"><span>Meteorite</span></a></li>
+            <li><a href="#Tab6"><span>Meteor Shower</span></a></li>
+            <li><a href="#Tab7"><span>Comet</span></a></li>
+            <li><a href="#Tab8"><span>NEO Groups</span></a></li>
+            <li><a href="#Tab9"><span>PHA</span></a></li>
+        </ul>
+        <div id="Tab1">
+            
+        </div>
+        <div id="Tab2">
+            <i>What is an asteroid</i>
 
+           <p> Asteroids are metallic, rocky bodies without atmospheres that orbit the Sun but are too small to be classified as planets. Known as "minor planets," tens of thousands of asteroids congregate in the so-called main asteroid belt: a vast, doughnut-shaped ring located between
+            the orbits of Mars and Jupiter from approximately 2 to 4 AU (186 million to 370 million miles/300 million to 600 million kilometers). Gaspra and Ida are main belt asteroids.
+
+            Asteroids are thought to be primordial material prevented by Jupiter's strong gravity from accreting into a planet-sized body when the solar system was born 4.6 billion years ago. It is estimated that the total mass of all asteroids would comprise a body approximately 930 miles (1,500 kilometers) in diameter -- less than half the size of the Moon.
+
+            Our understanding of asteroids has been derived from three main sources: Earth-based remote sensing, data from the Galileo flybys, and laboratory analysis of meteorites. Asteroids are classified into different types according to their albedo, composition derived from spectral  eatures in their reflected sunlight, and inferred similarities to known meteorite types. Albedo refers to an object's measure of reflectivity, or intrinsic brightness. A white, perfectly reflecting surface has an albedo of 1.0; a black, perfectly absorbing surface has an albedo of 0.0.</p>
+            <i> The majority of asteroids fall into the following three categories:</i>
+            <p>
+                C-type (carbonaceous):  Includes more than 75 percent of known asteroids. Very dark with an albedo of 0.03-0.09. Composition is thought to be similar to the Sun, depleted in  ydrogen, helium, and other volatiles. C-type asteroids inhabit the main belt's outer regions.
+
+                S-type (silicaceous):  Accounts for about 17 percent of known asteroids. Relatively bright with an albedo of 0.10-0.22. Composition is metallic iron mixed with iron- and magnesium-silicates. S-type asteroids dominate the inner asteroid belt.
+                M-type (metallic):  Includes many of the rest of the known asteroids. Relatively bright with an albedo of 0.10- 0.18. Composition is apparently dominated by metallic iron. M-type asteroids inhabit the main belt's middle region.
+
+                A long-standing scientific debate exists over whether the most common asteroids -- the S-types -- are the source of ordinary chondrites. Spectral evidence so far suggests that the S-type asteroids may be geochemically processed bodies akin to the stony-irons. If S-ypes are unrelated to ordinary chondrites, then another parent source must be found. If the two are related, then scientists need an explanation for why they aren't spectrally similar.
+                Asteroids with orbits that bring them within 1.3 AU (121 million miles/195 million kilometers) of the Sun are known as Earth-approaching or near-Earth asteroids (NEAs). It is believed that most NEAs are fragments jarred from the main belt by a combination of asteroid collisions and the gravitational influence of Jupiter. Some NEAs may be the nuclei of dead, short-period comets. The NEA population appears to be representative of most or all asteroid types found in the main belt.
+
+            </p>
+            <i> NEAs are grouped into three categories:</i>
+            <p>
+                <ul>
+                    <li>
+                        <b>Amors:</b>  Asteroids which cross Mars' orbit but do not quite reach the orbit of Earth. Eros -- target of the NEAR mission -- is a typical Amor.
+                    </li>
+                    <li>
+                        <b> Apollos:</b>  Asteroids which cross Earth's orbit with a period greater than 1 year.   eographos represents the Apollos.
+                    </li>
+                    <li>
+                        <b> Atens:</b>  Asteroids which cross Earth's orbit with a period less than 1 year. Ra-Shalom is a typical Aten.
+
+                    </li>
+                </ul>
+            </p>
+            <p>
+                NEAs are a dynamically young population whose orbits evolve on 100-million-year time scales because of collisions and gravitational interactions with the Sun and the terrestrial planets. Approximately 250 NEAs have been found to date, probably only a few percent of their total population. The largest presently known is 1036 Ganymed, with an approximate diameter of 25.5 miles (41 kilometers). Estimates suggest at least a thousand NEAs may be large
+                enough -- 0.6 mile (1 kilometer) or more in diameter -- to threaten Earth.
+
+            </p>
+        </div>
+
+        <div id="Tab5">
+            <i> What is a Meteorite?</i>
+            <p>
+                Earth is bombarded with millions of tons of space material each day. Most of the objects vaporize in our atmosphere, but some of the larger pieces (from pebbles to boulder-sized rocks) actually fall to the ground. Most of the objects come from asteroids, which are objects made of various types of rock and have existed since the origin of the solar system.  A small rocky or metallic chunk of material that travels through space is called a meteoroid. Very small meteoroids (the size of dust) are often referred to as micrometeoroids or space dust. These fragments may also be leftover comet debris, or were ejected in collisions between other solar system bodies such as the Moon or Mars.
+                As a meteoroid travels through our atmosphere, it is heated by friction. That causes it to glow, and if this happens at night, we see a long streak of light known as a meteor.
+                If the object survives the trip and falls to Earth’s surface, it is known as a meteorite. Many of these fall into the ocean (since about 71% of Earth’s surface is covered by water). The rest fall on land, where they await discovery by meteorite hunters.
+            </p>
+            <i>Types of Meteorites</i>
+            <p>
+                Meteorites are fragments of asteroids that fall to ground on Earth. Scientists classify these objects according to their chemical makeup (what chemicals exist in them), their isotopic compositions (the types of each chemical element they contain), and their mineralogy (the minerals they contain).
+                Beyond those classifications, meteorites are also sorted as stony (made of rocky material), metallic (whether they contain iron), and mixtures (stony-irons).  Those three classes can be divided even further. For example, pallasite meteorites are a class of stony-iron meteorites that are made mostly of nickel and iron, but also contain olivine crystals (a commonly found crystal on Earth).
+            </p>
+           <i>Famous Meteorites</i>
+            <p>
+                The Allende Meteorite fell to Earth in a fireball on February 8, 1969.  It was originally about the size of a car, and pieces were strewn across the Mexican state of Chihuahua. It has become one of the most-studied meteorites of all time, and is an excellent example of a carbonaceous chondrite. These types of meteorites date back to the formation of the Sun and Planets, and are among the most primitive solar system materials around. They are made mostly of silicates, oxides, sulfides, water, organic compounds and various minerals.
+                The Fukang Meteorite is one of the best examples of a pallasite, a type of stony-iron meteorite. Because of its large gem-like olivine crystals, pieces of this meteorite are much in demand by collectors.
+
+                The Hoba Meteorite was found in Namibia (in Africa). It is a very large, 60-tone rock, which makes it nearly impossible to move. It has been declared a National Monument in Namibia, and is one of the rare meteorites that is also part of a tourist site. Meteorite experts think Hoban fell about 80,000 years ago.  It is mostly iron, with some nickel and traces of other elements.
+                The Willamette Meteorite weighs 15.5 tons and is the largest ever found in the United States.
+            </p>
+        </div>
+        <div id="Tab6">
+            <i> What is a meteor shower?</i>
+            <p>
+                A meteor shower occurs when a number of meteors flash seem to radiate (or shoot out from) the same point in the sky.  They are usually named for the constellation in which their radiant appears.  The meteoroids in a shower usually come from the trail of debris left behind by a comet. In the case of the Geminids and Quadrantids, those meteor showers come from the debris scatted by orbiting asteroids. When Earth’s orbit intersects the dust trail, we see more meteors flaring as the cometary debris encounters our planet’s atmosphere.
+
+            </p>
+            <i>Famous Meteor Showers</i>
+            <p>There are several famous and easy-to-observe meteor showers.  The Perseids occur in mid-August when Earth encounters the debris trail from Comet Swift-Tuttle. They appear to radiate from a point in the constellation Perseus. The shower lasts from mid-July to late August, with a peak around August 12th each year.
+            The Leonid meteor shower can be a very busy one. It occurs each year in mid-November, and rains debris from Comet 55P/Tempel-Tuttle. In 1833, observers estimated that hundreds of thousands of meteors flared through the sky. Observers wait for it each year, hoping for another spectacular show, emanating from the direction of the constellation Leo.
+            The Geminid meteor shower occurs in December, when Earth crosses the path of the asteroid 3200 Phaethon. The meteors appear to come from the direction of the constellation Gemini, and observers have noted that they move more slowly than other meteors.
+            In late April, the Lyrids bring pieces of comet C/1861 G1/Thatcher back to Earth, which seem to radiate from the constellation Lyra. The peak of this storm is around April 22. Every 60 years or so this shower becomes more intense.
+            </p>
+        </div>
+        <div id="Tab7">
+            <i> What is a Comet?</i>
+            <p>
+                A comet is a very small solar system body made mostly of ices mixed with smaller amounts of dust and rock. Most comets are no larger than a few kilometres across. The main body of the comet is called the nucleus, and it can contain water, methane, nitrogen and other ices.
+                When a comet is heated by the Sun, its ices begin to sublimate (similar to the way dry ice “fizzes” when you leave it in sunlight). The mixture of ice crystals and dust blows away from the comet nucleus in the solar wind, creating a pair of tails. The dust tail is what we normally see when we view comets from Earth.
+                A plasma tail also forms when molecules of gas are “excited” by interaction with the solar wind. The plasma tail is not normally seen with the naked eye, but can be imaged. Comets normally orbit the Sun, and have their origins in the Oort Cloud and Kuiper Belt regions of the outer solar system.
+            </p>
+            <i>Comet Naming</i>
+            <p>
+                Comets come in several categories. The most common are periodic and non-periodic.
+                In the past, comets were named for their discoverers, such as Comet Halley for Sir Edmond Halley. In modern times, comet names are governed by rules set forth by the International Astronomical Union (IAU). A comet is given an official designation, and can also be identified by the last names of up to three independent discoverers.
+                Here’s how it works. Once a comet has been confirmed, the following naming rules are followed. First, if the comet is a periodic comet, then it is indicated with a P/ followed by the year of its discovery, a letter indicating the half-month in which it was discovered, followed by a number indicating its order of discovery. So, for example, the second periodic comet found in the first half of January, 2015 would be called P/2015 A2.
+                A non-periodic comet would be indicated with a C/ followed by the year of its discovery, a letter indicating the half-month in which it was discovered, followed by a number indicating its order of discovery.
+                If a comet is independently discovered by three people named Smith, Jones, and Petersen, it could also be called Comet Smith-Jones-Petersen, in addition to its formal designation. Today, many comets are found through automated instrument searches, and so the formal designations are more commonly used. </p>
+        <i>Famous Comets</i>
+            <p>Well-known comets include the non-periodic comets Hale-Bopp (C/1995 O1), Hyakutake (C/1996 B2), McNaught (C2006 P1), and Lovejoy (C/2011 W3). These flared brightly in our skies and then faded into obscurity.
+            In addition, Comet Shoemaker-Levy 9 (D/1993 F2) was spotted after it had broken up after a close call with Jupiter. (The D in its proper designation means it has disappeared or is determined to no longer exist). More than a year later, the pieces of the comet crashed into Jupiter.
+            The periodic Comet Halley (1P/Halley) is the most famous in history. It returns to the inner solar system once every 76 years. Other well-known periodic comets include 2P/Encke, which appears ever 3.3 years and 9P/Tempel (Tempel 2), which was visited by the Deep Impact and Stardust probes, and makes perihelion around the Sun every 5.5 years.
+            </p>
+       </div>
+        <div id="Tab8">
+            <i> What are NEO groups?</i>
+            <p>
+                In terms of orbital elements, NEOs are asteroids and comets with perihelion distance q less than 1.3 AU. Near-Earth Comets (NECs) are further restricted to include only short-period comets (i.e orbital period P less than 200 years). The vast majority of NEOs are asteroids, referred to as Near-Earth Asteroids (NEAs). NEAs are divided into groups (Aten, Apollo, Amor) according to their perihelion distance (q), aphelion distance (Q) and their semi-major axes (a).
+
+            </p>
+          
+        </div>
+        <div id="Tab9">
+            <i> What is a PHA?</i>
+            <p>
+                Potentially Hazardous Asteroids (PHAs) are currently defined based on parameters that measure the asteroid's potential to make threatening close approaches to the Earth. Specifically, all asteroids with an Earth Minimum Orbit Intersection Distance (MOID) of 0.05 AU or less and an absolute magnitude (H) of 22.0 or less are considered PHAs. In other words, asteroids that can't get any closer to the Earth (i.e. MOID) than 0.05 AU (roughly 7,480,000 km or 4,650,000 mi) or are smaller than about 150 m (500 ft) in diameter (i.e. H = 22.0 with assumed albedo of 13%) are not considered PHAs.
+
+                There are currently 1575 known PHAs. ( http://neo.jpl.nasa.gov/orbits/ )
+
+                This ``potential'' to make close Earth approaches does not mean a PHA will impact the Earth. It only means there is a possibility for such a threat. By monitoring these PHAs and updating their orbits as new observations become available, we can better predict the close-approach statistics and thus their Earth-impact threat.
+
+
+            </p>
+
+        </div>
+    </div>
+</div>
+    <script>
+    $("#InfoTabs").tabs();
+    </script>
 
 </body>
 </html
