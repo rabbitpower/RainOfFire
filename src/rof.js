@@ -398,9 +398,6 @@ require(['threex.planets/package.require.js'
 
     earthSystemGeographic.add(earthMesh);
 
-    //var earthSystem2 = new THREE.Group();
-    //earthSystem2.add(createEarth());
-
     if (webgl) {
         var cloudMesh = THREEx.Planets.createEarthCloud()
         cloudMesh.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
@@ -439,7 +436,6 @@ require(['threex.planets/package.require.js'
 
     function toJED(d) {
         var timeStamp = d.getTime();
-        //return timeStamp / (1000 * 60 * 60 * 24) + 2440587.5;
         return timeStamp / (1000 * 60 * 60 * 24) + 2440587.5;
     }
 
@@ -506,10 +502,44 @@ require(['threex.planets/package.require.js'
     var toTheSunMatrix = new THREE.Matrix4().copy(toTheSun.matrix);
     scene.add(toTheSun);
 
+    function calculateGeographicToEclipticMatrix(julianTime) {
+        var earthGeographicMatrix = new THREE.Matrix4();
+        var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
+        var partOfTheDay = julianTime % rotationSpeed - 1 / 12;
+        var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
+        var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
+
+        // 2nd: tilt the earth
+        earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
+        // 1st: rotate along the Z axis so we're facing the sun with the proper side
+        earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
+
+        return earthGeographicMatrix;
+    }
+
+    function calculateEclipticToHeliocentricMatrix(julianTime) {
+        var epos = earth.getPosAtTime(julianTime);
+
+        var earthEclipticMatrix = new THREE.Matrix4();
+        earthEclipticMatrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
+        earthEclipticMatrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
+
+        return earthEclipticMatrix;
+    }
+
+    function calculateGeographicToHeliocentricMatrix(julianTime) {
+
+        var earthEclipticMatrix = calculateEclipticToHeliocentricMatrix(julianTime);
+        var earthGeographicMatrix = calculateGeographicToEclipticMatrix(julianTime);
+
+        var conversionMatrix = new THREE.Matrix4().multiply(earthEclipticMatrix, earthGeographicMatrix);
+
+        return conversionMatrix;
+    }
+
     var start = new Date().getTime();
 
     function updateEarthSystem() {
-        // TODO: Set earth's tilted axis and position
         //if (!stopAnimation) {
         //    jed = toJED($("#element").dateRangeSlider("values").max);
         //}
@@ -520,69 +550,18 @@ require(['threex.planets/package.require.js'
 
         var date = new Date(Date.UTC(2013, 1, 15, 3, 20, 33));
 
-        jed = toJED(date);// + (new Date().getTime() - start) * 10000 / (1000 * 60 * 60 * 24);
+        jed = toJED(date); // + (new Date().getTime() - start) * 1000 / (1000 * 60 * 60 * 24);
         //}
 
-        var matrix = new THREE.Matrix4();
-
-        var epos = earth.getPosAtTime(jed);
-
-        matrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
-
-        matrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
+        var earthEclipticMatrix = calculateEclipticToHeliocentricMatrix(jed); // new THREE.Matrix4();
 
         earthSystemEcliptic.matrix = new THREE.Matrix4();
-        earthSystemEcliptic.applyMatrix(matrix);
+        earthSystemEcliptic.applyMatrix(earthEclipticMatrix);
 
-        var matrix = new THREE.Matrix4();
-
-        var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
-
-        var partOfTheDay = jed % rotationSpeed - 1/12;
-        var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
-        var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
-
-        // 4rd: rotate the earth to be facing the sun properly
-        //matrix.multiply(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
-
-        // 2nd: tilt the earth
-        matrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
-
-        // 1st: rotate along the Z axis so we're facing the sun with the proper side
-        matrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
+        var earthGeographicMatrix = calculateGeographicToEclipticMatrix(jed);
 
         earthSystemGeographic.matrix = new THREE.Matrix4();
-        earthSystemGeographic.applyMatrix(matrix);
-
-        /* The second Earth: */
-        /*
-        {
-            var matrix = new THREE.Matrix4();
-
-            var j2d = Astronomy.DayValue(date);// + (new Date().getTime() - start) * 1000000 / (1000 * 60 * 60 * 24);
-            var epos2 = Astronomy.Earth.EclipticCartesianCoordinates(j2d);
-
-            matrix.multiply(new THREE.Matrix4().makeTranslation(epos2.x, epos2.y, epos2.z));
-
-            matrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
-
-            // 4rd: rotate the earth to be facing the sun properly
-            matrix.multiply(new THREE.Matrix4().makeRotationZ(-Math.PI / 2));
-
-            // 3rd: tilt the earth
-            matrix.multiply(new THREE.Matrix4().makeRotationY(-Yangle));
-
-            // 2nd: rotate along the Z axis so we're facing the sun with the proper side
-            matrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
-
-            // 1st: get the earth straight
-            matrix.multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
-
-            earthSystem2.matrix = new THREE.Matrix4();
-            earthSystem2.applyMatrix(matrix);
-        }
-        */
-        /* ---------------- */
+        earthSystemGeographic.applyMatrix(earthGeographicMatrix);
 
         /* The Moon: */
         {
@@ -591,7 +570,6 @@ require(['threex.planets/package.require.js'
             var j2d = Astronomy.DayValue(date);// + (new Date().getTime() - start) * 100 / (1000 * 60 * 60 * 24);
             var epos2 = Astronomy.Moon.GeocentricCoordinates(j2d);
 
-            //matrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
             matrix.multiply(new THREE.Matrix4().makeTranslation(epos2.x / earthSystemScale, epos2.y / earthSystemScale, epos2.z / earthSystemScale));
 
             matrix.multiply(new THREE.Matrix4().makeScale(moonScale, moonScale, moonScale));
@@ -601,24 +579,11 @@ require(['threex.planets/package.require.js'
         }
         /* ---------------- */
 
-        //var deltaPos = new THREE.Vector3().copy(camera.position);
-        //deltaPos.sub(earthSystem.position);
-
         solarSystem.matrix = new THREE.Matrix4();
 
-        solarSystem.applyMatrix(new THREE.Matrix4().makeTranslation(-epos[0], -epos[1], -epos[2]));
-        //solarSystem.applyMatrix(new THREE.Matrix4().makeTranslation(-epos.x, -epos.y, -epos.z));
+        solarSystem.applyMatrix(new THREE.Matrix4().makeTranslation(-earthEclipticMatrix.elements[12], -earthEclipticMatrix.elements[13], -earthEclipticMatrix.elements[14]));
 
-        //deltaPos.add(earthSystem.position);
-
-        //camera.position.copy(deltaPos);
-
-        //camera.lookAt(earthSystem.position);
-        //earthSystem.matrixWorldNeedsUpdate = true;
-
-
-        var pos = new THREE.Vector3(epos[0], epos[1], epos[2]);
-        //var pos = new THREE.Vector3(epos.x, epos.y, epos.z);
+        var pos = new THREE.Vector3(earthEclipticMatrix.elements[12], earthEclipticMatrix.elements[13], earthEclipticMatrix.elements[14]);
         var angle = pos.angleTo(new THREE.Vector3(0, 1, 0));
 
         toTheSun.matrix.copy(toTheSunMatrix);
@@ -643,143 +608,18 @@ require(['threex.planets/package.require.js'
     scene.add(mesh)
 
     //////////////////////////////////////////////////////////////////////////////////
-    //      Camera Controls                         //
+    //      Interaction Controls                         //
     //////////////////////////////////////////////////////////////////////////////////
-    var projector = new THREE.Projector();
-
-    //var mouse = { x: 0, y: 0 }
-    //var mouse3D, isMouseDown = false, onMouseDownPosition = new THREE.Vector2(),
-    //    radious = 1.5, theta = 45, onMouseDownTheta = 45, phi = 60, onMouseDownPhi = 60;
-
-    //camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-    //camera.position.y = radious * Math.sin(phi * Math.PI / 360);
-    //camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-    //camera.updateMatrix();
-
-    function onDocumentMouseDown(event) {
-
-        event.preventDefault();
-
-        isMouseDown = true;
-
-        onMouseDownTheta = theta;
-        onMouseDownPhi = phi;
-        onMouseDownPosition.x = event.clientX;
-        onMouseDownPosition.y = event.clientY;
-
-      
-        // update the mouse variable
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-
-    }
-
-    function onDocumentMouseMove(event) {
-
-        event.preventDefault();
-
-        if (isMouseDown) {
-            ////
-            sprite1.position.set(event.clientX, event.clientY - 20, 0);
-            ////
-            theta = -((event.clientX - onMouseDownPosition.x) * 0.5) + onMouseDownTheta;
-            phi = ((event.clientY - onMouseDownPosition.y) * 0.5) + onMouseDownPhi;
-
-            phi = Math.min(180, Math.max(-180, phi));
-
-            camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-            camera.position.y = radious * Math.sin(phi * Math.PI / 360);
-            camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-            camera.updateMatrix();
-
-         
-        }
-
-        var vector = new THREE.Vector3((event.clientX / renderer.domElement.width) * 2 - 1, -(event.clientY / renderer.domElement.height) * 2 + 1, 0.5);
-        mouse3D = vector.unproject(camera);
-        ray.direction = mouse3D.sub(camera.position).normalize();
-
-        interact();
-        render();
-
-    }
 
     function onDocumentMouseUp(event) {
 
-        //event.preventDefault();
-
-        //isMouseDown = false;
-
-        //onMouseDownPosition.x = event.clientX - onMouseDownPosition.x;
-        //onMouseDownPosition.y = event.clientY - onMouseDownPosition.y;
-
-        //if (onMouseDownPosition.length() > 5) {
-
-        //    return;
-
-        //}
-
-        //var intersect, intersects = ray.intersectScene(scene);
-
-        //if (intersects.length > 0) {
-
-        //    //intersect = intersects[0].object == brush ? intersects[1] : intersects[0];
-
-        //    //if (intersect) {
-
-        //    //    if (isShiftDown) {
-
-        //    //        if (intersect.object != plane) {
-
-        //    //            scene.removeObject(intersect.object);
-
-        //    //        }
-
-        //    //    } else {
-
-        //    //        var position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
-
-        //    //        var voxel = new THREE.Mesh(cube, new THREE.MeshColorFillMaterial(colors[color]));
-        //    //        voxel.position.x = Math.floor(position.x / 50) * 50 + 25;
-        //    //        voxel.position.y = Math.floor(position.y / 50) * 50 + 25;
-        //    //        voxel.position.z = Math.floor(position.z / 50) * 50 + 25;
-        //    //        voxel.overdraw = true;
-        //    //        scene.addObject(voxel);
-
-        //    //    }
-
-        //    //}
-
-        //}
-
-        //updateHash();
         interact(event);
         sprite1.position.set((event.clientX / renderer.domElement.width) * 2 - 1, -(event.clientY / renderer.domElement.height) * 2 + 1, 1);
 
         render();
-
     }
 
-    function onDocumentMouseWheel(event) {
-
-        radious -= event.wheelDeltaY / 1000;
-
-        camera.position.x = radious * Math.sin(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-        camera.position.y = radious * Math.sin(phi * Math.PI / 360);
-        camera.position.z = radious * Math.cos(theta * Math.PI / 360) * Math.cos(phi * Math.PI / 360);
-        camera.updateMatrix();
-
-        interact();
-        render();
-
-    }
-
-    //document.addEventListener('mousemove', onDocumentMouseMove, false);
-    //document.addEventListener('mousedown', onDocumentMouseDown, false);
     document.addEventListener('mouseup', onDocumentMouseUp, false);
-
-    //document.addEventListener('mousewheel', onDocumentMouseWheel, false);
 
     var $trackingOverlay = $('#tracking-overlay');
 
@@ -837,10 +677,6 @@ require(['threex.planets/package.require.js'
         raycaster.near = camera.near;
         raycaster.far = camera.far;
 
-        //raycaster.origin.copy(camera.position);
-        //raycaster.direction.set(coords.x, coords.y, 0.5).unproject(camera).sub(camera.position).normalize();
-
-
         if(($("#info-panel").tabs("option", "active")) == 0){
             // calculate objects intersecting the picking ray
             var intersects = raycaster.intersectObjects(bolideObjects, true);
@@ -875,98 +711,6 @@ require(['threex.planets/package.require.js'
             }
         }
     }
-
-        //}
-
-        function render() {
-
-            // update the picking ray with the camera and mouse position	
-            raycaster.setFromCamera(mouse, camera);
-
-            // calculate objects intersecting the picking ray
-           // var intersects = raycaster.intersectObjects(bolideObjects, true);
-            var intersects = raycaster.intersectObjects(meteoriteObjects, true);
-           
-            for (var i = 0; i < intersects.length; i++) {
-               
-                //alert(intersects[i].object);
-                //intersects[i].object.material.color.set(0xff0000);
-
-            }
-            
-           // renderer.render(scene, camera);
-
-        }
-
-        //window.addEventListener('mouseclick', onMouseClick, false);
-
-        //window.requestAnimationFrame(render);
-
-        //console.log(camera.position.x);
-        //console.log(camera.position.y);
-        //console.log(camera.position.z);
-        //if (objectHovered) {
-
-        //    objectHovered.material[0].color.a = 1;
-        //    objectHovered.material[0].color.updateStyleString();
-        //    objectHovered = null;
-
-        //}
-
-        //var position, intersect, intersects = ray.intersectScene(scene);
-
-        //if (intersects.length > 0) {
-
-        //    intersect = intersects[0].object != brush ? intersects[0] : intersects[1];
-
-        //    if (intersect) {
-
-        //        if (isShiftDown) {
-
-        //            if (intersect.object != plane) {
-
-        //                objectHovered = intersect.object;
-        //                objectHovered.material[0].color.a = 0.5;
-        //                objectHovered.material[0].color.updateStyleString();
-
-        //                return;
-
-        //            }
-
-        //        } else {
-
-        //            position = new THREE.Vector3().add(intersect.point, intersect.object.matrixRotation.transform(intersect.face.normal.clone()));
-
-        //            brush.position.x = Math.floor(position.x / 50) * 50 + 25;
-        //            brush.position.y = Math.floor(position.y / 50) * 50 + 25;
-        //            brush.position.z = Math.floor(position.z / 50) * 50 + 25;
-
-        //            return;
-
-        //        }
-
-        //    }
-
-        //}
-
-        //brush.position.y = 2000;
-
-    //}
-
-    //function animate() {
-    //    requestAnimationFrame(animate);
-    //    render();
-    //    update();
-    //}
-
-    //function update() {
-    //    if (keyboard.pressed("z")) {
-    //        // do something
-    //    }
-    //    var delta = clock.getDelta();
-    //    //customUniforms.time.value += delta;
-    //    controls.update();
-    //}
 
     function render() {
 
@@ -1011,8 +755,6 @@ require(['threex.planets/package.require.js'
         //specularMap : specularMap,
         //specular    : new THREE.Color('grey'),
     })
-
-    //material = new THREE.MeshBasicMaterial({ color: 0xFFFF88 });
 
     //
     var bolideObjects = [];
@@ -1239,132 +981,23 @@ require(['threex.planets/package.require.js'
         };
     }
 
-    function calculateGeographicToEclipticMatrix(julianTime) {
-        var earthGeographicMatrix = new THREE.Matrix4();
-        var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
-        var partOfTheDay = julianTime % rotationSpeed - 1 / 12;
-        var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
-        var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
-
-        // 2nd: tilt the earth
-        earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
-        // 1st: rotate along the Z axis so we're facing the sun with the proper side
-        earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
-
-        return earthGeographicMatrix;
-    }
-
-    function calculateEclipticToHeliocentricMatrix(julianTime) {
-        var epos = earth.getPosAtTime(julianTime);
-
-        var earthEclipticMatrix = new THREE.Matrix4();
-        earthEclipticMatrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
-        earthEclipticMatrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
-
-        return earthEclipticMatrix;
-    }
-
-    function calculateGeographicToHeliocentricMatrix(julianTime) {
-        //var jed = toJED(impactDate);
-        //var epos = earth.getPosAtTime(jed);
-
-        //var earthEclipticMatrix = new THREE.Matrix4();
-        //earthEclipticMatrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
-        //earthEclipticMatrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
-
-        //// this is our Earth ecliptic position
-        ////earthSystemEcliptic.matrix = new THREE.Matrix4();
-        ////earthSystemEcliptic.applyMatrix(matrix);
-
-        //var earthGeographicMatrix = new THREE.Matrix4();
-        //var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
-        //var partOfTheDay = jed % rotationSpeed - 1 / 12;
-        //var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
-        //var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
-
-        //// 2nd: tilt the earth
-        //earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
-        //// 1st: rotate along the Z axis so we're facing the sun with the proper side
-        //earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
-
-        //// this is our Geographic position relative to the Ecliptic
-        ////earthSystemGeographic.matrix = new THREE.Matrix4();
-        ////earthSystemGeographic.applyMatrix(matrix);
-
-        var earthEclipticMatrix = calculateEclipticToHeliocentricMatrix(julianTime);
-        var earthGeographicMatrix = calculateGeographicToEclipticMatrix(julianTime);
-
-        var conversionMatrix = new THREE.Matrix4().multiply(earthEclipticMatrix, earthGeographicMatrix);
-
-        return conversionMatrix;
-    }
-
     function addBolideTrajectory(index, bol, trajectory) {
         //if (bol.ImpactEnergy != 440) return;
-
-        //// Draw our from-earth trajectory:
-        //var pts = []
-        //var parts = 10000000;
-
-        //for (var i = 0; i <= parts; i += 1000) {
-        //    var vector = new THREE.Vector3(dx - dxo * i, dy - dyo * i, dz - dzo * i);
-        //    pts.push(vector);
-        //}
-
-        //points = new THREE.Geometry();
-        //points.vertices = pts;
-
-        //var line = new THREE.Line(points,
-        //  new THREE.LineBasicMaterial({
-        //      color: 0xFFFFFF,
-        //      linewidth: 1
-        //  }), THREE.LineStrip);
-
-        //earthSystemGeographic.add(line);
 
         // calculate heliocentric object position and velocity
 
         var impactDate = new Date(bol.Date + " UTC");
 
         var julianTime = toJED(impactDate);
-        //var jed = toJED(impactDate);
-        //var epos = earth.getPosAtTime(jed);
-
-        //var earthEclipticMatrix = new THREE.Matrix4();
-        //earthEclipticMatrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
-        //earthEclipticMatrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
-
-        //// this is our Earth ecliptic position
-        ////earthSystemEcliptic.matrix = new THREE.Matrix4();
-        ////earthSystemEcliptic.applyMatrix(matrix);
-
-        //var earthGeographicMatrix = new THREE.Matrix4();
-        //var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
-        //var partOfTheDay = jed % rotationSpeed - 1 / 12;
-        //var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
-        //var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
-
-        //// 2nd: tilt the earth
-        //earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
-        //// 1st: rotate along the Z axis so we're facing the sun with the proper side
-        //earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
-
-        //// this is our Geographic position relative to the Ecliptic
-        ////earthSystemGeographic.matrix = new THREE.Matrix4();
-        ////earthSystemGeographic.applyMatrix(matrix);
 
         var bolideMatrix = calculateGeographicToHeliocentricMatrix(julianTime);
 
         var position = new THREE.Vector3(trajectory.position.x, trajectory.position.y, trajectory.position.z);
 
-        //position.applyMatrix4(earthGeographicMatrix);
-        //position.applyMatrix4(earthEclipticMatrix);
         position.applyMatrix4(bolideMatrix);
 
         var direction = new THREE.Vector3(trajectory.velocity.x, trajectory.velocity.y, trajectory.velocity.z);
 
-        //direction.transformDirection(earthGeographicMatrix);
-        //direction.transformDirection(earthEclipticMatrix);
         direction.transformDirection(bolideMatrix);
 
         var pts = []
