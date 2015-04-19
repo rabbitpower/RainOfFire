@@ -287,8 +287,14 @@ require(['threex.planets/package.require.js'
                 animationStart = new Date(animationEnd.getTime() - animationPreCollisionTime);
                 animationT0 = new Date();
 
-                solarSystem.add(bolideObjects[selectedIndex]);
-                bolideObjects[selectedIndex].scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
+                earthSystemGeographic.remove(bolideObjects[selectedIndex]);
+                solarSystem.remove(bolideObjects[selectedIndex]);
+                bolideObjects[selectedIndex] = null;
+
+                addBolide(selectedIndex, bolides[selectedIndex]);
+
+                //solarSystem.add(bolideObjects[selectedIndex]);
+                //bolideObjects[selectedIndex].scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
 
                 //controls.dollyOut(50000);
 
@@ -1107,11 +1113,11 @@ require(['threex.planets/package.require.js'
         direction.sub(positionTminus1);
 
         var pts = []
-        var parts = 60000;
+        var parts = 200000;
 
         var prevPos = position;
 
-        var t = 600; // s
+        var t = 720; // s
 
         // T0
         p0.copy(prevPos); // used for animating the bolide Mesh
@@ -1139,7 +1145,20 @@ require(['threex.planets/package.require.js'
 
         var currentTime = 2;
 
+        var referenceDistance = 0;
+
+        var vt0 = new THREE.Vector3();
+
         for (var i = 0; i <= parts; i += 1) {
+            //if (i == 0) {
+            //    vt0.copy(position);
+            //}
+            //if (i == 10) {
+            //    prevPos.copy(vt0);
+            //    t *= 10;
+            //    vt0.copy(position);
+            //}
+
             //var vector = new THREE.Vector3(position.x - direction.x * i, position.y - direction.y * i, position.z - direction.z * i);
             var nextPos = new THREE.Vector3();
             nextPos.add(position);
@@ -1155,14 +1174,28 @@ require(['threex.planets/package.require.js'
 
             nextPos.add(accelerationVector);
 
-            if (i % 5 == 0) pts.push(nextPos);
+            if (i % 50 == 0) pts.push(nextPos);
 
             prevPos = position;
             position = nextPos;
 
             currentTime += t;
-            if (!p1 && currentTime * 1000 > animationPreCollisionTime) {
+            if (!p1 && currentTime * 1000 >= animationPreCollisionTime) {
                 p1 = new THREE.Vector3().copy(position);
+            }
+
+            if (referenceDistance != 0) {
+                var delta0 = new THREE.Vector3().copy(position);
+                delta0.sub(p0);
+
+                if (delta0.length() < referenceDistance / 2) {
+                    pts.push(nextPos);
+                    break;
+                }
+            } else if (i == 0) {
+                var delta0 = new THREE.Vector3().copy(position);
+                delta0.sub(p0);
+                referenceDistance = delta0.length();
             }
         }
 
@@ -1207,9 +1240,13 @@ require(['threex.planets/package.require.js'
         //earthSystemGeographic.add(bolide);
         //earthSystem.matrixWorldNeedsUpdate = true;
 
-        //addBolideTrajectory(index, bol, trajectory);
+        addBolideTrajectory(index, bol, trajectory);
 
         onRenderFcts.push(function callback(delta, now) {
+            if (bolideObjects[index] != bolide) {
+                onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
+                return;
+            }
             // everything that's not selected we animate as before
             if (selectedIndex != index) {
                 if (bolideTime <= 0 || !bolideObjects[index]) {
