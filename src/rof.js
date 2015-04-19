@@ -1,11 +1,11 @@
 require(['threex.planets/package.require.js'
 ], function () {
 
-    var AU = 1;
+    var AU = 149597871; // km
 
     var earthDiameter = 12742; // km
     
-    var earthSystemScale = AU * earthDiameter / 149597871; // 0.000085175009111944 * AU;
+    var earthSystemScale = 1 * earthDiameter / AU; // 0.000085175009111944 * AU;
 
     var moonScale = 1 * 3474 / earthDiameter;
 
@@ -266,6 +266,13 @@ require(['threex.planets/package.require.js'
        }
     }
 
+    var animationT0 = new Date();
+    var animationStart = new Date();
+    var animationEnd = new Date();
+    var animatingCollision = false;
+    var animationPreCollisionTime = 2 * 3600 * 1000; // 1 hour before collision
+    var animationSpeedUp = 100;
+
     var idlist = [];
     $("#selectable").selectable({
         selected: function (event, ui) {
@@ -274,6 +281,17 @@ require(['threex.planets/package.require.js'
             for (var i = 0; i < idlist.length; i++) {
                 selectedIndex = idlist[0];
                 infoPanel(idlist[0]);
+
+                animatingCollision = true;
+                animationEnd = new Date(bolides[selectedIndex].Date + " UTC");
+                animationStart = new Date(animationEnd.getTime() - animationPreCollisionTime);
+                animationT0 = new Date();
+
+                solarSystem.add(bolideObjects[selectedIndex]);
+                bolideObjects[selectedIndex].scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
+
+                controls.dollyOut(50000);
+
                 SelectionUpdate();
             }
         }
@@ -500,7 +518,7 @@ require(['threex.planets/package.require.js'
     toTheSun.scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
     toTheSun.updateMatrix();
     var toTheSunMatrix = new THREE.Matrix4().copy(toTheSun.matrix);
-    scene.add(toTheSun);
+    //scene.add(toTheSun);
 
     function calculateGeographicToEclipticMatrix(julianTime) {
         var earthGeographicMatrix = new THREE.Matrix4();
@@ -537,8 +555,6 @@ require(['threex.planets/package.require.js'
         return conversionMatrix;
     }
 
-    var start = new Date().getTime();
-
     function updateEarthSystem() {
         //if (!stopAnimation) {
         //    jed = toJED($("#element").dateRangeSlider("values").max);
@@ -548,7 +564,12 @@ require(['threex.planets/package.require.js'
 
         var date = new Date(); //$("#element").dateRangeSlider("values").max;// new Date();
 
-        var date = new Date(Date.UTC(2013, 1, 15, 3, 20, 33));
+        if (animatingCollision) {
+            var date = new Date(animationStart.getTime() + (new Date().getTime() - animationT0.getTime()) * animationSpeedUp);
+        }
+        else {
+            date = new Date(2013, 1, 15, 5, 20, 33);
+        }
 
         jed = toJED(date); // + (new Date().getTime() - start) * 1000 / (1000 * 60 * 60 * 24);
         //}
@@ -648,7 +669,11 @@ require(['threex.planets/package.require.js'
             return;
            // v = meteoriteObjects[selectedIndex].position.clone();
         }
-        v.applyMatrix4(earthSystemGeographic.matrixWorld);
+        if (bolideObjects[selectedIndex].parent == earthSystemGeographic) {
+            v.applyMatrix4(earthSystemGeographic.matrixWorld);
+        } else {
+            v.applyMatrix4(solarSystem.matrixWorld);
+        }
         v.project(camera);
         percX = (v.x + 1) / 2;
         percY = (-v.y + 1) / 2;
@@ -712,9 +737,23 @@ require(['threex.planets/package.require.js'
         }
     }
 
+    var doZoomIn = false;
+
+    function keyDownTextField(e) {
+        doZoomIn = !doZoomIn;
+    }
+
+    document.addEventListener("keydown", keyDownTextField, false);
+
     function render() {
 
         updateEarthSystem();
+
+        if (animatingCollision && doZoomIn) {
+            //if(controls.radius > 1 * earthSystemScale)
+                controls.dollyIn(1.004);
+        }
+
         controls.update();
         SelectionUpdate();
 
@@ -945,6 +984,7 @@ require(['threex.planets/package.require.js'
     var bolideGeometry = new THREE.Geometry();
 
     // Geographic coordinates - relative to the Earth's prime meridian and celestial equator
+    // Scaled to earthSystemScale
 
     function getBolideBurstPositionAndVelocity(bol) {
         var bolideMinDistance = 0.51;
@@ -961,14 +1001,14 @@ require(['threex.planets/package.require.js'
         var dy = Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
         var dz = Math.sin(phi * Math.PI / 180);
 
-        var dxo = -dx * kilometerScale * bolideDefaultSpeed, dyo = -dy * kilometerScale * bolideDefaultSpeed, dzo = -dz * kilometerScale * bolideDefaultSpeed;
+        var dxo = -dx * bolideDefaultSpeed, dyo = -dy * bolideDefaultSpeed, dzo = -dz * bolideDefaultSpeed;
 
         if (bol.vx != null && bol.vy != null && bol.vz != null) {
             var v = new THREE.Vector3(bol.vx, bol.vy, bol.vz);
 
-            dxo = v.x * kilometerScale;
-            dyo = v.y * kilometerScale;
-            dzo = v.z * kilometerScale;
+            dxo = v.x;
+            dyo = v.y;
+            dzo = v.z;
         }
 
         var bolideEndX = bolideMinDistance * dx;
@@ -981,8 +1021,24 @@ require(['threex.planets/package.require.js'
         };
     }
 
+    var bolideTrajectories = [];
+    var bolideFallTrajectories = [];
+
+
     function addBolideTrajectory(index, bol, trajectory) {
+        if (bolideTrajectories[index]) {
+            solarSystem.add(bolideTrajectories[index]);
+            return;
+        }
+
+        var p0 = new THREE.Vector3();
+        var p1 = null;
+
         //if (bol.ImpactEnergy != 440) return;
+
+        if (!(bol.vx != null && bol.vy != null && bol.vz != null)) {
+            //return;
+        }
 
         // calculate heliocentric object position and velocity
 
@@ -997,15 +1053,94 @@ require(['threex.planets/package.require.js'
         position.applyMatrix4(bolideMatrix);
 
         var direction = new THREE.Vector3(trajectory.velocity.x, trajectory.velocity.y, trajectory.velocity.z);
+        var directionLength = direction.length();
+        //var direction = new THREE.Vector3();
 
+        //var inverseBolideMatrix = new THREE.Matrix4().getInverse(bolideMatrix);
+        ////
         direction.transformDirection(bolideMatrix);
+        direction.multiplyScalar(directionLength / AU);
+
+        var bolideTminus1Matrix = calculateGeographicToHeliocentricMatrix(julianTime - 20 / (24 * 60 * 60));
+
+        var earthCenter0 = new THREE.Vector3();
+        earthCenter0.applyMatrix4(bolideMatrix);
+
+        var earthCenterTm1 = new THREE.Vector3();
+        earthCenterTm1.applyMatrix4(bolideTminus1Matrix);
+
+        var earthVelocity = earthCenter0.sub(earthCenterTm1);
+        earthVelocity.multiplyScalar(1 / 20);
+
+        var positionTminus1 = new THREE.Vector3().copy(position);
+        positionTminus1.sub(direction);
+        positionTminus1.sub(earthVelocity);
+
+        //var positionTminus1 = new THREE.Vector3(trajectory.position.x, trajectory.position.y, trajectory.position.z);
+        //positionTminus1.sub(direction);
+        //positionTminus1.applyMatrix4(bolideTminus1Matrix);
+
+        direction.copy(position);
+        direction.sub(positionTminus1);
 
         var pts = []
-        var parts = 10000000;
+        var parts = 600000;
 
-        for (var i = 0; i <= parts; i += 1000) {
-            var vector = new THREE.Vector3(position.x - direction.x * i, position.y - direction.y * i, position.z - direction.z * i);
-            pts.push(vector);
+        var prevPos = position;
+
+        var t = 600; // s
+
+        // T0
+        p0.copy(prevPos); // used for animating the bolide Mesh
+
+        pts.push(prevPos);
+
+        position = positionTminus1;
+
+        // T-1
+        var dTm1 = new THREE.Vector3().copy(direction);
+        dTm1.multiplyScalar(t);
+
+        position.copy(prevPos);
+        position.sub(dTm1);
+
+
+        pts.push(position);
+
+        var G = 6.67384e-11;
+        var Sm = 1.98855e+30;
+
+        // precalculated constants:
+        var SmAU = 88855781.211820740911879366426819; // AU-normalized Sun mass: Sm / (AU * AU * 1000 * 1000)
+        var SmAUG = 0.00593009266882697733527336990834; // AU-normalized Sun gravitational pull: G * SmAU
+
+        var currentTime = 2;
+
+        for (var i = 0; i <= parts; i += 1) {
+            //var vector = new THREE.Vector3(position.x - direction.x * i, position.y - direction.y * i, position.z - direction.z * i);
+            var nextPos = new THREE.Vector3();
+            nextPos.add(position);
+            nextPos.add(position);
+            nextPos.sub(prevPos);
+
+            var acceleration = SmAUG * t * t / Math.pow(position.length(), 2);
+
+            var accelerationVector = new THREE.Vector3().copy(position);
+            accelerationVector.negate();
+            accelerationVector.normalize();
+            accelerationVector.multiplyScalar(acceleration / (AU * 1000));
+
+            nextPos.add(accelerationVector);
+
+            if (i % 5 == 0) pts.push(nextPos);
+
+            prevPos = position;
+            position = nextPos;
+
+            currentTime += t;
+            if (!p1 && currentTime * 1000 > animationPreCollisionTime) {
+                p1 = new THREE.Vector3().copy(position);
+            }
         }
 
         points = new THREE.Geometry();
@@ -1017,18 +1152,23 @@ require(['threex.planets/package.require.js'
               linewidth: 1
           }), THREE.LineStrip);
 
+        bolideFallTrajectories[index] = { start: p1, end: p0 };
+
+        bolideTrajectories[index] = line;
         solarSystem.add(line);
     }
 
     function addBolide(index, bol) {
 
-        if (bolideObjects[index]) return;
+        //if (bolideObjects[index]) {
+        //    return;
+        //}
 
         //var bolideSize = 0.005;
         var bolideSize = kilometerScale * 50;
 
-        var bolideFallTime = 4;
-        var bolideSpeedScale = 100;
+        var bolideFallTime = 30;
+        var bolideSpeedScale = 1;
 
         var bolideTime = bolideFallTime;
 
@@ -1036,27 +1176,69 @@ require(['threex.planets/package.require.js'
 
         var bolide = createBolide(index, bolideSize);
 
-        earthSystemGeographic.add(bolide);
+        var customMat = bolide.material;
+
+        bolide.scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
+
+        solarSystem.add(bolide);
+        //earthSystemGeographic.add(bolide);
         //earthSystem.matrixWorldNeedsUpdate = true;
 
+        addBolideTrajectory(index, bol, trajectory);
+
         onRenderFcts.push(function callback(delta, now) {
-            bolideTime -= delta;
+            //bolideTime -= delta;
+            if (selectedIndex != index) return;
 
-            bolideTime = Math.max(0, bolideTime);
+            var t = 1 - ((new Date().getTime() - animationT0.getTime()) * animationSpeedUp) / animationPreCollisionTime;
 
-            bolide.position.x = trajectory.position.x - bolideTime * trajectory.velocity.x * bolideSpeedScale;
-            bolide.position.y = trajectory.position.y - bolideTime * trajectory.velocity.y * bolideSpeedScale;
-            bolide.position.z = trajectory.position.z - bolideTime * trajectory.velocity.z * bolideSpeedScale;
+            //bolideTime = Math.max(0, bolideTime);
+
+            //bolide.position.x = trajectory.position.x - bolideTime * trajectory.velocity.x * bolideSpeedScale * kilometerScale;
+            //bolide.position.y = trajectory.position.y - bolideTime * trajectory.velocity.y * bolideSpeedScale * kilometerScale;
+            //bolide.position.z = trajectory.position.z - bolideTime * trajectory.velocity.z * bolideSpeedScale * kilometerScale;
+
+            bolideTime = Math.max(0, t);
+
+            sst = bolideFallTrajectories[index];
+
+            bolide.position.x = sst.end.x - bolideTime * (sst.end.x - sst.start.x);
+            bolide.position.y = sst.end.y - bolideTime * (sst.end.y - sst.start.y);
+            bolide.position.z = sst.end.z - bolideTime * (sst.end.z - sst.start.z);
+            
+            if (bolideTime < 0.05) {
+                if (bolide.material != customMat) bolide.material = customMat;
+            }
+            else {
+                if (bolide.material == customMat) bolide.material = material;
+            }
 
             if (bolideTime <= 0 || !bolideObjects[index]) {
+                //if (!bolideObjects[index]) {
+                //}
+
+                if (bolide.parent != earthSystemGeographic) {
+
+                    solarSystem.remove(bolide);
+
+                    bolide.scale.set(1, 1, 1);
+
+                    bolide.position.x = trajectory.position.x;
+                    bolide.position.y = trajectory.position.y;
+                    bolide.position.z = trajectory.position.z;
+
+                    earthSystemGeographic.add(bolide);
+                }
+
                 onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
+
+                //animatingCollision = false;
                 return;
             }
         })
         bolide.name = index;
         bolideObjects[index] = bolide;
 
-        addBolideTrajectory(index, bol, trajectory);
     }
 
     // other
@@ -1129,6 +1311,7 @@ require(['threex.planets/package.require.js'
             if(!visible) {
                 earthSystemGeographic.remove(bolideObjects[i]);
                 bolideObjects[i] = null;
+                solarSystem.remove(bolideTrajectories[i]);
             }
         }
     }
