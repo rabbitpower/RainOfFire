@@ -504,7 +504,7 @@ require(['threex.planets/package.require.js'
     toTheSun.scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
     toTheSun.updateMatrix();
     var toTheSunMatrix = new THREE.Matrix4().copy(toTheSun.matrix);
-    //scene.add(toTheSun);
+    scene.add(toTheSun);
 
     var start = new Date().getTime();
 
@@ -518,7 +518,7 @@ require(['threex.planets/package.require.js'
 
         var date = new Date(); //$("#element").dateRangeSlider("values").max;// new Date();
 
-        //var date = new Date(2015, 2, 20, 10, 41);
+        var date = new Date(Date.UTC(2013, 1, 15, 3, 20, 33));
 
         jed = toJED(date);// + (new Date().getTime() - start) * 10000 / (1000 * 60 * 60 * 24);
         //}
@@ -1202,46 +1202,27 @@ require(['threex.planets/package.require.js'
 
     var bolideGeometry = new THREE.Geometry();
 
-    function addBolide(index, bol) {
+    // Geographic coordinates - relative to the Earth's prime meridian and celestial equator
 
-        if (bolideObjects[index]) return;
-
-        //var bolideSize = 0.005;
-        var bolideSize = kilometerScale * 50;
-
+    function getBolideBurstPositionAndVelocity(bol) {
         var bolideMinDistance = 0.51;
 
-        var bolideFallTime = 4;
         var bolideDefaultSpeed = 10; // km/s
-        var bolideSpeedScale = 100;
 
-        var bolideTime = bolideFallTime;
+        var phi = parseFloat(bol.Latitude.slice(0, -1));
+        var theta = parseFloat(bol.Longitude.slice(0, -1));
 
-        var phi = parseFloat( bol.Latitude.slice(0, -1) );
-        var theta = parseFloat( bol.Longitude.slice(0, -1) );
+        if (bol.Latitude.slice(-1) == "S") phi = -phi;
+        if (bol.Longitude.slice(-1) == "W") theta = -theta;
 
-        if( bol.Latitude.slice(-1) == "S" ) phi = -phi;
-        if( bol.Longitude.slice(-1) == "W" ) theta = -theta;
-
-        var dx = Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180); // X?
-        var dy = Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180); // Y?
-        var dz = Math.sin(phi * Math.PI / 180); // Z?
+        var dx = Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+        var dy = Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
+        var dz = Math.sin(phi * Math.PI / 180);
 
         var dxo = -dx * kilometerScale * bolideDefaultSpeed, dyo = -dy * kilometerScale * bolideDefaultSpeed, dzo = -dz * kilometerScale * bolideDefaultSpeed;
 
-        var bolide = createBolide(index, bolideSize);
-
         if (bol.vx != null && bol.vy != null && bol.vz != null) {
             var v = new THREE.Vector3(bol.vx, bol.vy, bol.vz);
-            //v.divideScalar(100);
-
-            // Taken from NASA's Fireball and Bolide Reports description of the Velocity Components:
-            // The pre-impact velocity components are expressed in a geocentric Earth-fixed reference frame defined as follows: 
-            // the z-axis is directed along the Earth's rotation axis towards the celestial north pole, 
-            // the x-axis lies in the Earth's equatorial plane, directed towards the prime meridian, 
-            // and the y-axis completes the right-handed coordinate system.
-            //
-            // We have to re-map the components to the coordinate system our Earth object is currently in.
 
             dxo = v.x * kilometerScale;
             dyo = v.y * kilometerScale;
@@ -1252,6 +1233,176 @@ require(['threex.planets/package.require.js'
         var bolideEndY = bolideMinDistance * dy;
         var bolideEndZ = bolideMinDistance * dz;
 
+        return {
+            position: new THREE.Vector3(bolideEndX, bolideEndY, bolideEndZ),
+            velocity: new THREE.Vector3(dxo, dyo, dzo)
+        };
+    }
+
+    function calculateGeographicToEclipticMatrix(julianTime) {
+        var earthGeographicMatrix = new THREE.Matrix4();
+        var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
+        var partOfTheDay = julianTime % rotationSpeed - 1 / 12;
+        var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
+        var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
+
+        // 2nd: tilt the earth
+        earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
+        // 1st: rotate along the Z axis so we're facing the sun with the proper side
+        earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
+
+        return earthGeographicMatrix;
+    }
+
+    function calculateEclipticToHeliocentricMatrix(julianTime) {
+        var epos = earth.getPosAtTime(julianTime);
+
+        var earthEclipticMatrix = new THREE.Matrix4();
+        earthEclipticMatrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
+        earthEclipticMatrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
+
+        return earthEclipticMatrix;
+    }
+
+    function calculateGeographicToHeliocentricMatrix(julianTime) {
+        //var jed = toJED(impactDate);
+        //var epos = earth.getPosAtTime(jed);
+
+        //var earthEclipticMatrix = new THREE.Matrix4();
+        //earthEclipticMatrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
+        //earthEclipticMatrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
+
+        //// this is our Earth ecliptic position
+        ////earthSystemEcliptic.matrix = new THREE.Matrix4();
+        ////earthSystemEcliptic.applyMatrix(matrix);
+
+        //var earthGeographicMatrix = new THREE.Matrix4();
+        //var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
+        //var partOfTheDay = jed % rotationSpeed - 1 / 12;
+        //var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
+        //var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
+
+        //// 2nd: tilt the earth
+        //earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
+        //// 1st: rotate along the Z axis so we're facing the sun with the proper side
+        //earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
+
+        //// this is our Geographic position relative to the Ecliptic
+        ////earthSystemGeographic.matrix = new THREE.Matrix4();
+        ////earthSystemGeographic.applyMatrix(matrix);
+
+        var earthEclipticMatrix = calculateEclipticToHeliocentricMatrix(julianTime);
+        var earthGeographicMatrix = calculateGeographicToEclipticMatrix(julianTime);
+
+        var conversionMatrix = new THREE.Matrix4().multiply(earthEclipticMatrix, earthGeographicMatrix);
+
+        return conversionMatrix;
+    }
+
+    function addBolideTrajectory(index, bol, trajectory) {
+        //if (bol.ImpactEnergy != 440) return;
+
+        //// Draw our from-earth trajectory:
+        //var pts = []
+        //var parts = 10000000;
+
+        //for (var i = 0; i <= parts; i += 1000) {
+        //    var vector = new THREE.Vector3(dx - dxo * i, dy - dyo * i, dz - dzo * i);
+        //    pts.push(vector);
+        //}
+
+        //points = new THREE.Geometry();
+        //points.vertices = pts;
+
+        //var line = new THREE.Line(points,
+        //  new THREE.LineBasicMaterial({
+        //      color: 0xFFFFFF,
+        //      linewidth: 1
+        //  }), THREE.LineStrip);
+
+        //earthSystemGeographic.add(line);
+
+        // calculate heliocentric object position and velocity
+
+        var impactDate = new Date(bol.Date + " UTC");
+
+        var julianTime = toJED(impactDate);
+        //var jed = toJED(impactDate);
+        //var epos = earth.getPosAtTime(jed);
+
+        //var earthEclipticMatrix = new THREE.Matrix4();
+        //earthEclipticMatrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
+        //earthEclipticMatrix.multiply(new THREE.Matrix4().makeScale(earthSystemScale, earthSystemScale, earthSystemScale));
+
+        //// this is our Earth ecliptic position
+        ////earthSystemEcliptic.matrix = new THREE.Matrix4();
+        ////earthSystemEcliptic.applyMatrix(matrix);
+
+        //var earthGeographicMatrix = new THREE.Matrix4();
+        //var rotationSpeed = 0.99726956632908425925925925925926 // rotations in a day
+        //var partOfTheDay = jed % rotationSpeed - 1 / 12;
+        //var Zangle = partOfTheDay * Math.PI * 2 / rotationSpeed - Math.PI / 2;
+        //var Yangle = 23.44 / 180 * Math.PI; // orbital tilt;
+
+        //// 2nd: tilt the earth
+        //earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationX(-Yangle));
+        //// 1st: rotate along the Z axis so we're facing the sun with the proper side
+        //earthGeographicMatrix.multiply(new THREE.Matrix4().makeRotationZ(Zangle));
+
+        //// this is our Geographic position relative to the Ecliptic
+        ////earthSystemGeographic.matrix = new THREE.Matrix4();
+        ////earthSystemGeographic.applyMatrix(matrix);
+
+        var bolideMatrix = calculateGeographicToHeliocentricMatrix(julianTime);
+
+        var position = new THREE.Vector3(trajectory.position.x, trajectory.position.y, trajectory.position.z);
+
+        //position.applyMatrix4(earthGeographicMatrix);
+        //position.applyMatrix4(earthEclipticMatrix);
+        position.applyMatrix4(bolideMatrix);
+
+        var direction = new THREE.Vector3(trajectory.velocity.x, trajectory.velocity.y, trajectory.velocity.z);
+
+        //direction.transformDirection(earthGeographicMatrix);
+        //direction.transformDirection(earthEclipticMatrix);
+        direction.transformDirection(bolideMatrix);
+
+        var pts = []
+        var parts = 10000000;
+
+        for (var i = 0; i <= parts; i += 1000) {
+            var vector = new THREE.Vector3(position.x - direction.x * i, position.y - direction.y * i, position.z - direction.z * i);
+            pts.push(vector);
+        }
+
+        points = new THREE.Geometry();
+        points.vertices = pts;
+
+        var line = new THREE.Line(points,
+          new THREE.LineBasicMaterial({
+              color: 0xFFFF00,
+              linewidth: 1
+          }), THREE.LineStrip);
+
+        solarSystem.add(line);
+    }
+
+    function addBolide(index, bol) {
+
+        if (bolideObjects[index]) return;
+
+        //var bolideSize = 0.005;
+        var bolideSize = kilometerScale * 50;
+
+        var bolideFallTime = 4;
+        var bolideSpeedScale = 100;
+
+        var bolideTime = bolideFallTime;
+
+        var trajectory = getBolideBurstPositionAndVelocity(bol);
+
+        var bolide = createBolide(index, bolideSize);
+
         earthSystemGeographic.add(bolide);
         //earthSystem.matrixWorldNeedsUpdate = true;
 
@@ -1260,9 +1411,9 @@ require(['threex.planets/package.require.js'
 
             bolideTime = Math.max(0, bolideTime);
 
-            bolide.position.x = bolideEndX - bolideTime * dxo * bolideSpeedScale;
-            bolide.position.y = bolideEndY - bolideTime * dyo * bolideSpeedScale;
-            bolide.position.z = bolideEndZ - bolideTime * dzo * bolideSpeedScale;
+            bolide.position.x = trajectory.position.x - bolideTime * trajectory.velocity.x * bolideSpeedScale;
+            bolide.position.y = trajectory.position.y - bolideTime * trajectory.velocity.y * bolideSpeedScale;
+            bolide.position.z = trajectory.position.z - bolideTime * trajectory.velocity.z * bolideSpeedScale;
 
             if (bolideTime <= 0 || !bolideObjects[index]) {
                 onRenderFcts.splice(onRenderFcts.indexOf(callback), 1);
@@ -1272,26 +1423,7 @@ require(['threex.planets/package.require.js'
         bolide.name = index;
         bolideObjects[index] = bolide;
 
-
-        //for( var i = 0; i < 10; i++ ) {
-
-        ////scene.add(bolide);
-        ////bolide.scale.set(bolideSize, bolideSize, bolideSize);
-
-        //bolide.position.x = bolideRadius * Math.sin(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-        //bolide.position.y = bolideRadius * Math.sin(phi * Math.PI / 180);
-        //bolide.position.z = bolideRadius * Math.cos(theta * Math.PI / 180) * Math.cos(phi * Math.PI / 180);
-
-        //THREE.GeometryUtils.merge(bolideGeometry, bolide);
-
-        //bolide.matrix.set(new THREE.Matrix4());
-
-        ////theta += 1.5;
-        ////phi += 0.1;
-
-        //bolideRadius += 0.005;
-
-        //}
+        addBolideTrajectory(index, bol, trajectory);
     }
 
     // other
