@@ -16,10 +16,15 @@ require(['threex.planets/package.require.js'
     var selectedIndex;
     $("#table-data").hide();
     $("#table-data-mete").hide();
+
+    var webgl = true;
+
     if (Detector.webgl)
         renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: false });
-    else
+    else {
         renderer = new THREE.CanvasRenderer();
+        webgl = false;
+    }
 
     var DateMin;
     var DateMax;
@@ -361,12 +366,12 @@ require(['threex.planets/package.require.js'
         //var loader = new THREE.DDSLoader();
         //var map = loader.load( 'images/earthmap7k.dds' );
 
-        var map = THREE.ImageUtils.loadTexture('images/earthmap8k.jpg');
+        var map = THREE.ImageUtils.loadTexture(webgl ? 'images/earthmap8k.jpg' : 'images/earthmap2k.jpg');
 
         //var bumpMap = THREE.ImageUtils.loadTexture('images/earthbump1k.jpg');
         var specularMap = THREE.ImageUtils.loadTexture('images/earthspec1k_optimized2.jpg');
 
-        var material = new THREE.MeshLambertMaterial({
+        var material = new THREE.MeshPhongMaterial({
             map: map,
             //bumpMap       : bumpMap,
             bumpScale: 0.05,
@@ -376,7 +381,7 @@ require(['threex.planets/package.require.js'
         })
 
         var mesh = new THREE.Mesh(geometry, material);
-        mesh.receiveShadow = true;
+        //mesh.receiveShadow = true;
         mesh.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
 
         return mesh
@@ -396,18 +401,20 @@ require(['threex.planets/package.require.js'
     //var earthSystem2 = new THREE.Group();
     //earthSystem2.add(createEarth());
 
-    var cloudMesh = THREEx.Planets.createEarthCloud()
-    cloudMesh.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+    if (webgl) {
+        var cloudMesh = THREEx.Planets.createEarthCloud()
+        cloudMesh.applyMatrix(new THREE.Matrix4().makeRotationX(Math.PI / 2));
 
-    earthSystemGeographic.add(cloudMesh)
+        earthSystemGeographic.add(cloudMesh)
 
-    onRenderFcts.push(function (delta, now) {
-        cloudMesh.rotateY(1 / 16 * delta)
-    })
+        onRenderFcts.push(function (delta, now) {
+            cloudMesh.rotateY(1 / 16 * delta)
+        })
+    }
 
     var moonMesh = THREEx.Planets.createMoon();
 
-    moonMesh.castShadow = true;
+    //moonMesh.castShadow = true;
     moonMesh.scale.set(moonScale, moonScale, moonScale);
     moonMesh.position.x = 1;
 
@@ -416,17 +423,17 @@ require(['threex.planets/package.require.js'
     // in the solar system:
     var solarSystem = new THREE.Group();
 
-    renderer.shadowMapEnabled = true;
-    renderer.shadowMapSoft = false;
+    //renderer.shadowMapEnabled = true;
+    //renderer.shadowMapSoft = false;
 
-    renderer.shadowCameraNear = camera.near;
-    renderer.shadowCameraFar = camera.far;
-    renderer.shadowCameraFov = 45;
+    //renderer.shadowCameraNear = camera.near;
+    //renderer.shadowCameraFar = camera.far;
+    //renderer.shadowCameraFov = 45;
 
     var light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(0, 0, 0);
-    light.castShadow = true;
-    light.shadowDarkness = 1;
+    //light.castShadow = true;
+    //light.shadowDarkness = 1;
 
     solarSystem.add(light)
 
@@ -436,6 +443,8 @@ require(['threex.planets/package.require.js'
         return timeStamp / (1000 * 60 * 60 * 24) + 2440587.5;
     }
 
+    var orbitSegments = webgl ? 1000 : 100;
+    var orbitSegmentsEarth = webgl ? 20000 : 100;
 
     var jed = toJED(new Date());
 
@@ -445,35 +454,35 @@ require(['threex.planets/package.require.js'
         display_color: new THREE.Color(0x913CEE),
         name: 'Mercury'
     });
-    solarSystem.add(mercury.getEllipse());
+    solarSystem.add(mercury.getEllipse(orbitSegments));
     var venus = new Orbit3D(Ephemeris.venus,
         {
             color: 0xFF7733, width: 1, jed: jed,
             display_color: new THREE.Color(0xFF7733),
             name: 'Venus'
         });
-    solarSystem.add(venus.getEllipse());
+    solarSystem.add(venus.getEllipse(orbitSegments));
     var earth = new Orbit3D(Ephemeris.earth,
         {
             color: 0x009ACD, width: 1, jed: jed,
             display_color: new THREE.Color(0x009ACD),
             name: 'Earth'
         });
-    solarSystem.add(earth.getEllipse());
+    solarSystem.add(earth.getEllipse(orbitSegmentsEarth));
     var mars = new Orbit3D(Ephemeris.mars,
         {
             color: 0xA63A3A, width: 1, jed: jed,
             display_color: new THREE.Color(0xA63A3A),
             name: 'Mars'
         });
-    solarSystem.add(mars.getEllipse());
+    solarSystem.add(mars.getEllipse(orbitSegments));
     var jupiter = new Orbit3D(Ephemeris.jupiter,
         {
             color: 0xFF7F50, width: 1, jed: jed,
             display_color: new THREE.Color(0xFF7F50),
             name: 'Jupiter'
         });
-    solarSystem.add(jupiter.getEllipse());
+    solarSystem.add(jupiter.getEllipse(orbitSegments));
 
     planets = [mercury, venus, earth, mars, jupiter];
 
@@ -511,7 +520,7 @@ require(['threex.planets/package.require.js'
 
         //var date = new Date(2015, 2, 20, 10, 41);
 
-        jed = toJED(date);// + (new Date().getTime() - start) * 100 / (1000 * 60 * 60 * 24);
+        jed = toJED(date);// + (new Date().getTime() - start) * 10000 / (1000 * 60 * 60 * 24);
         //}
 
         var matrix = new THREE.Matrix4();
@@ -583,7 +592,7 @@ require(['threex.planets/package.require.js'
             var epos2 = Astronomy.Moon.GeocentricCoordinates(j2d);
 
             //matrix.multiply(new THREE.Matrix4().makeTranslation(epos[0], epos[1], epos[2]));
-            matrix.multiply(new THREE.Matrix4().makeTranslation(epos2.x / earthSystemScale, epos2.y / earthSystemScale, 0* epos2.z / earthSystemScale));
+            matrix.multiply(new THREE.Matrix4().makeTranslation(epos2.x / earthSystemScale, epos2.y / earthSystemScale, epos2.z / earthSystemScale));
 
             matrix.multiply(new THREE.Matrix4().makeScale(moonScale, moonScale, moonScale));
 
@@ -1174,8 +1183,10 @@ require(['threex.planets/package.require.js'
         });
 
         var bolideGeometry = new THREE.SphereGeometry(bolideSize, 16, 16);
-        var bolideMesh = new THREE.Mesh(bolideGeometry, customMaterial);
-        //var bolideMesh = new THREE.Mesh(bolideGeometry, material);
+
+        var bolideMaterial = webgl ? customMaterial : material;
+
+        var bolideMesh = new THREE.Mesh(bolideGeometry, bolideMaterial);
 
         onRenderFcts.push(function callback(delta, now) {
             if (!bolideObjects[index]) {
