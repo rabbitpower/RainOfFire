@@ -565,7 +565,12 @@ require(['threex.planets/package.require.js'
         var date = new Date(); //$("#element").dateRangeSlider("values").max;// new Date();
 
         if (animatingCollision) {
-            var date = new Date(animationStart.getTime() + (new Date().getTime() - animationT0.getTime()) * animationSpeedUp);
+            var time = animationStart.getTime() + (new Date().getTime() - animationT0.getTime()) * animationSpeedUp;
+            if (time < animationEnd.getTime() + animationPreCollisionTime) {
+                var date = new Date(time);
+            } else {
+                animatingCollision = false;
+            }
         }
         else {
             //date = new Date(2013, 1, 15, 5, 20, 33);
@@ -573,6 +578,8 @@ require(['threex.planets/package.require.js'
                 date = $("#element").dateRangeSlider("values").max;
             }
         }
+
+        $('#simulationTime').text(date.toISOString());
 
         jed = toJED(date); // + (new Date().getTime() - start) * 1000 / (1000 * 60 * 60 * 24);
         //}
@@ -1409,10 +1416,12 @@ require(['threex.planets/package.require.js'
         animating = true;
 
         stopAnimation = false;
-        controls.autoRotate = true;
+        
+        controls.rotateUp(-0.5);
+        //controls.autoRotate = true;
 
         var temp = StartDateMin;
-        var DateEnd = new Date(2015, 11, 31);
+        var DateEnd = new Date();
         var animate = function () {
             if (temp < DateEnd && !stopAnimation) {
                 tempStart = new Date(temp.getFullYear() - 1, temp.getMonth(), temp.getDate());
