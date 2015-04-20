@@ -273,6 +273,19 @@ require(['threex.planets/package.require.js'
     var animationPreCollisionTime = 2 * 3600 * 1000; // 1 hour before collision
     var animationSpeedUp = 100;
 
+    function startImpactSimulation() {
+        animatingCollision = true;
+        animationEnd = new Date(bolides[selectedIndex].Date + " UTC");
+        animationStart = new Date(animationEnd.getTime() - animationPreCollisionTime);
+        animationT0 = new Date();
+
+        earthSystemGeographic.remove(bolideObjects[selectedIndex]);
+        solarSystem.remove(bolideObjects[selectedIndex]);
+        bolideObjects[selectedIndex] = null;
+
+        addBolide(selectedIndex, bolides[selectedIndex]);
+    }
+
     var idlist = [];
     $("#selectable").selectable({
         selected: function (event, ui) {
@@ -282,26 +295,25 @@ require(['threex.planets/package.require.js'
                 selectedIndex = idlist[0];
                 infoPanel(idlist[0]);
 
-                animatingCollision = true;
-                animationEnd = new Date(bolides[selectedIndex].Date + " UTC");
-                animationStart = new Date(animationEnd.getTime() - animationPreCollisionTime);
-                animationT0 = new Date();
-
-                earthSystemGeographic.remove(bolideObjects[selectedIndex]);
-                solarSystem.remove(bolideObjects[selectedIndex]);
-                bolideObjects[selectedIndex] = null;
-
-                addBolide(selectedIndex, bolides[selectedIndex]);
-
+                startImpactSimulation();
                 //solarSystem.add(bolideObjects[selectedIndex]);
                 //bolideObjects[selectedIndex].scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
-
-                //controls.dollyOut(50000);
 
                 SelectionUpdate();
             }
         }
     });
+
+    $("#selectable").mousedown(function () {
+        stopAnimation = true;
+    });
+
+    $("#buttonSimulateImpact").button()
+      .click(function (event) {
+          if (selectedIndex !== null) {
+              startImpactSimulation();
+          }
+      });
 
     $("#selectable2").selectable({
         selected: function (event, ui) {
@@ -662,7 +674,7 @@ require(['threex.planets/package.require.js'
 
 
     function SelectionUpdate() {
-        if (selectedIndex == null) {
+        if (selectedIndex === null) {
             $trackingOverlay.css('display', 'none');
             return;
         }
@@ -1409,6 +1421,8 @@ require(['threex.planets/package.require.js'
                 solarSystem.remove(bolideTrajectories[i]);
             }
         }
+        $("#selectable").empty();
+        populateABlist();
     }
 
     function StartAnimation() {
@@ -1420,11 +1434,11 @@ require(['threex.planets/package.require.js'
         controls.rotateUp(-0.5);
         //controls.autoRotate = true;
 
-        var temp = StartDateMin;
+        var temp = new Date(2009, 5, 1);
         var DateEnd = new Date();
         var animate = function () {
             if (temp < DateEnd && !stopAnimation) {
-                tempStart = new Date(temp.getFullYear() - 1, temp.getMonth(), temp.getDate());
+                tempStart = new Date(Date.UTC(temp.getFullYear() - 1, temp.getMonth(), temp.getDate()));
                 temp = new Date(Date.UTC(temp.getFullYear(), temp.getMonth(), temp.getDate() + 1));
                 $("#element").dateRangeSlider("values", tempStart, temp);
                 window.setTimeout(animate, 20);
