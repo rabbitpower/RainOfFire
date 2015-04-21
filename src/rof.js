@@ -295,7 +295,7 @@ require(['threex.planets/package.require.js'
                 selectedIndex = idlist[0];
                 infoPanel(idlist[0]);
 
-                startImpactSimulation();
+                //startImpactSimulation();
                 //solarSystem.add(bolideObjects[selectedIndex]);
                 //bolideObjects[selectedIndex].scale.set(earthSystemScale, earthSystemScale, earthSystemScale);
 
@@ -1168,7 +1168,9 @@ require(['threex.planets/package.require.js'
 
         var vt0 = new THREE.Vector3();
 
-        for (var i = 0; i <= parts; i += 1) {
+        var step = webgl ? 1000 : 100;
+
+        for (var i = 1; i <= parts; i += 1) {
             //if (i == 0) {
             //    vt0.copy(position);
             //}
@@ -1193,7 +1195,7 @@ require(['threex.planets/package.require.js'
 
             nextPos.add(accelerationVector);
 
-            if (i % 50 == 0) pts.push(nextPos);
+            if ((i < 100 && i % 10 == 0) || i % step) pts.push(nextPos);
 
             prevPos = position;
             position = nextPos;
@@ -1211,7 +1213,7 @@ require(['threex.planets/package.require.js'
                     pts.push(nextPos);
                     break;
                 }
-            } else if (i == 0) {
+            } else {
                 var delta0 = new THREE.Vector3().copy(position);
                 delta0.sub(p0);
                 referenceDistance = delta0.length();
